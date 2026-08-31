@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { initialCustomers, initialProducts } from "./mockData.js";
+import browserSeedData from "./browser-seed-data.json";
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -32,6 +33,12 @@ const palettes = {
   plum: { name: "Signal Plum", accent: "#f0a5ff", ink: "#42105b" },
 };
 const CustomerContext = createContext([]);
+const bundledProducts = browserSeedData.products?.length
+  ? browserSeedData.products
+  : initialProducts;
+const bundledCustomers = browserSeedData.customers?.length
+  ? browserSeedData.customers
+  : initialCustomers;
 
 function Icon({ name }) {
   const icons = {
@@ -68,7 +75,7 @@ export default function App() {
   const [products, setProducts] = useState(() => {
     try {
       const saved =
-        JSON.parse(localStorage.getItem("gc-pos-products")) ?? initialProducts;
+        JSON.parse(localStorage.getItem("gc-pos-products")) ?? bundledProducts;
       return saved.map((product) => ({
         ...product,
         id: product.itemNumber ?? product.id,
@@ -76,7 +83,7 @@ export default function App() {
         promotionalFinancingTerm: product.promotionalFinancingTerm ?? 6,
       }));
     } catch {
-      return initialProducts.map((product) => ({
+      return bundledProducts.map((product) => ({
         ...product,
         id: product.itemNumber ?? product.id,
         location: product.location ?? "Temple - 499",
@@ -90,16 +97,16 @@ export default function App() {
       return saved
         ? [
             ...saved,
-            ...initialCustomers.filter(
+            ...bundledCustomers.filter(
               (customer) =>
                 !saved.some(
                   (savedCustomer) => savedCustomer.id === customer.id,
                 ),
             ),
           ]
-        : initialCustomers;
+        : bundledCustomers;
     } catch {
-      return initialCustomers;
+      return bundledCustomers;
     }
   });
   const [cart, setCart] = useState([]);

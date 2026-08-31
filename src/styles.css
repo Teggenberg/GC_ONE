@@ -318,6 +318,9 @@
   gap: 5px;
   cursor: pointer;
 }
+.customer-panel .customer-search-button {
+  margin-top: 8px;
+}
 .field-jump-readout {
   position: fixed;
   right: 23px;
@@ -590,7 +593,7 @@
 }
 .line-action-group {
   display: grid;
-  grid-template-columns: 21px 38px 28px 28px;
+  grid-template-columns: 21px 38px 28px 28px 28px;
   gap: clamp(10px, 2vw, 30px);
   align-items: center;
 }
@@ -606,8 +609,35 @@
 .line-description-area .coverage-button,
 .line-description-area .coverage-ineligible,
 .line-description-area .financing-indicator,
-.line-description-area .add-on-button {
+.line-description-area .add-on-button,
+.line-description-area .delivery-indicator {
   margin-left: 0;
+}
+.delivery-indicator {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid #9aa8ba;
+  border-radius: 4px;
+  color: #405675;
+}
+.delivery-indicator svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+.dark-mode .delivery-indicator {
+  border-color: #3a4860;
+  color: #c7d5e8;
+}
+.matrix-terminal .delivery-indicator {
+  border-color: #21773b;
+  color: #6dff8a;
 }
 .line-action-placeholder {
   display: block;
@@ -1324,6 +1354,12 @@
   font: 600 12px "DM Sans";
   cursor: pointer;
 }
+.financing-details-button:disabled {
+  border-color: #c8d0db;
+  background: #edf1f5;
+  color: #8a96a7;
+  cursor: not-allowed;
+}
 .ticket-totals > div {
   display: flex;
   justify-content: space-between;
@@ -1418,6 +1454,57 @@
   font: 10px "DM Mono";
   text-align: center;
 }
+.shipping-details-list {
+  display: grid;
+  gap: 8px;
+}
+.shipping-details-list > div {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #dfe4eb;
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+.shipping-details-list strong {
+  color: #25334c;
+  font-size: 12px;
+}
+.shipping-details-list span {
+  color: #68758a;
+  font: 10px "DM Mono";
+}
+.shipping-choice-group {
+  margin-top: 16px;
+}
+.shipping-choice-group > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #526681;
+  font: 10px "DM Mono";
+}
+.shipping-choice-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.shipping-service-options {
+  grid-template-columns: 1fr;
+}
+.shipping-choice-options button {
+  border: 1px solid #dbe1e9;
+  border-radius: 5px;
+  background: #fff;
+  color: #35445c;
+  padding: 9px 10px;
+  font: 11px "DM Sans";
+  cursor: pointer;
+}
+.shipping-choice-options button:hover,
+.shipping-choice-options button.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, #fff);
+  color: #25334c;
+}
 .payment-panel {
   margin-bottom: 0;
 }
@@ -1490,6 +1577,11 @@
   background: color-mix(in srgb, var(--accent) 18%, #141d2e);
   color: #edf3fb;
 }
+.dark-mode .financing-details-button:disabled {
+  border-color: #3a4860;
+  background: #141d2e;
+  color: #718096;
+}
 .dark-mode .complete-ticket-button {
   background: color-mix(in srgb, var(--accent) 18%, #141d2e);
   color: #edf3fb;
@@ -1528,6 +1620,28 @@
 }
 .dark-mode .receipt-icon {
   color: #c7d5e8;
+}
+.dark-mode .shipping-details-list > div {
+  border-color: #2d3950;
+}
+.dark-mode .shipping-details-list strong {
+  color: #edf3fb;
+}
+.dark-mode .shipping-details-list span {
+  color: #aab6c9;
+}
+.dark-mode .shipping-choice-group > span {
+  color: #aab6c9;
+}
+.dark-mode .shipping-choice-options button {
+  border-color: #3a4860;
+  background: #141d2e;
+  color: #d5dfec;
+}
+.dark-mode .shipping-choice-options button:hover,
+.dark-mode .shipping-choice-options button.selected {
+  background: color-mix(in srgb, var(--accent) 18%, #141d2e);
+  color: #edf3fb;
 }
 .dark-mode .ticket-focus-readout,
 .dark-mode .panel,

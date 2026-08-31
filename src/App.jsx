@@ -55,6 +55,14 @@ function Icon({ name }) {
   );
 }
 
+function DeliveryTruckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 6h11v10H3zM14 10h4l3 3v3h-7zM7 18a2 2 0 1 0 0 .01M18 18a2 2 0 1 0 0 .01" />
+    </svg>
+  );
+}
+
 export default function App() {
   const [view, setView] = useState("Sales Ticket Processing");
   const [products, setProducts] = useState(() => {
@@ -845,6 +853,7 @@ function ProductProfileFields({ description, product }) {
           <option>Guitars</option>
           <option>Bass</option>
           <option>Keyboards</option>
+          <option>Amps</option>
           <option>Drums</option>
           <option>Accessories</option>
           <option>Pro Audio</option>
@@ -955,6 +964,9 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
   const [applicationLinkSent, setApplicationLinkSent] = useState(false);
   const [receiptDeliveryOpen, setReceiptDeliveryOpen] = useState(false);
   const [receiptDeliveryChoice, setReceiptDeliveryChoice] = useState("");
+  const [shippingDetailsOpen, setShippingDetailsOpen] = useState(false);
+  const [shippingDeliveryOption, setShippingDeliveryOption] = useState("Ship to Store");
+  const [shippingServiceLevel, setShippingServiceLevel] = useState("Ground - Free");
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedNextItem, setSelectedNextItem] = useState(null);
   const [ticketLines, setTicketLines] = useState([
@@ -1340,9 +1352,22 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
       Number(line.coverage?.price || 0),
     0,
   );
+  const remoteFulfillmentLines = ticketLines.filter(
+    (line) =>
+      line.product && line.fulfillment && line.fulfillment !== "In-store",
+  );
+  const hasTicketItems = ticketLines.some((line) => line.product);
+  const shippingRates = {
+    "Ground - Free": 0,
+    "2nd-Day Express - $29.99": 29.99,
+    "Next Day Air - $59.99": 59.99,
+  };
+  const shippingCharge = remoteFulfillmentLines.length
+    ? shippingRates[shippingServiceLevel]
+    : 0;
   const taxRate = 0.0725;
   const salesTax = values.taxable === "Yes" ? saleTotal * taxRate : 0;
-  const grandTotal = saleTotal + salesTax;
+  const grandTotal = saleTotal + salesTax + shippingCharge;
   const paymentTypes = [
     "C -Card",
     "01 - Cash",
@@ -1502,15 +1527,25 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
           <div className="panel-title">
             <div>
               <p className="eyebrow">CUSTOMER INFORMATION</p>
-              <h3>Customer details</h3>
+              <button
+                className="customer-search-button"
+                type="button"
+                onClick={() =>
+                  window.dispatchEvent(new Event("customer-lookup"))
+                }
+              >
+                <Icon name="search" /> Search customer
+              </button>
             </div>
-            <button
-              className="customer-search-button"
-              type="button"
-              onClick={() => window.dispatchEvent(new Event("customer-lookup"))}
-            >
-              <Icon name="search" /> Search customer
-            </button>
+            {remoteFulfillmentLines.length > 0 && (
+              <button
+                className="customer-search-button"
+                type="button"
+                onClick={() => setShippingDetailsOpen(true)}
+              >
+                Shipping Details
+              </button>
+            )}
           </div>
           <div className="customer-grid">
             {input("customerId")}
@@ -1529,6 +1564,7 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
             className="financing-details-button"
             type="button"
             onClick={() => setFinancingDetailsOpen(true)}
+            disabled={!hasTicketItems}
           >
             Financing Details
           </button>
@@ -1543,6 +1579,10 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
           <div>
             <span>13 · Tax (7.25%)</span>
             <b>{money.format(salesTax)}</b>
+          </div>
+          <div>
+            <span>13.5 · Shipping</span>
+            <b>{money.format(shippingCharge)}</b>
           </div>
           <div className="grand-total">
             <span>14 · Total</span>
@@ -1859,6 +1899,64 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
           </small>
         </Modal>
       )}
+      {shippingDetailsOpen && (
+        <Modal
+          title="Shipping Details"
+          onClose={() => setShippingDetailsOpen(false)}
+        >
+          <div className="shipping-details-list">
+            {remoteFulfillmentLines.map((line, index) => (
+              <div key={`${line.itemNumber}-${index}`}>
+                <strong>{line.product.name}</strong>
+                <span>{line.fulfillment}</span>
+              </div>
+            ))}
+          </div>
+          <div className="shipping-choice-group">
+            <span>Delivery option</span>
+            <div className="shipping-choice-options">
+              {["Ship to Store", "Ship to Customer"].map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={shippingDeliveryOption === option ? "selected" : ""}
+                  onClick={() => setShippingDeliveryOption(option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="shipping-choice-group">
+            <span>Service level</span>
+            <div className="shipping-choice-options shipping-service-options">
+              {[
+                "Ground - Free",
+                "2nd-Day Express - $29.99",
+                "Next Day Air - $59.99",
+              ].map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={shippingServiceLevel === option ? "selected" : ""}
+                  onClick={() => setShippingServiceLevel(option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="form-actions">
+            <button
+              className="primary"
+              type="button"
+              onClick={() => setShippingDetailsOpen(false)}
+            >
+              Close
+            </button>
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }
@@ -2156,6 +2254,17 @@ function TicketLineItems({
               )}
               {(!line.product || line.product.category === "Accessories") && (
                 <span className="line-action-placeholder add-on-slot" />
+              )}
+              {line.fulfillment && line.fulfillment !== "In-store" ? (
+                <span
+                  className="delivery-indicator"
+                  title={`Delivery from ${line.fulfillment}`}
+                  aria-label={`Delivery from ${line.fulfillment}`}
+                >
+                  <DeliveryTruckIcon />
+                </span>
+              ) : (
+                <span className="line-action-placeholder delivery-slot" />
               )}
             </div>
           </div>
@@ -2538,13 +2647,16 @@ function useLookupShortcut(matches, onSelect) {
 
 function InventoryLookup({ products, onSelect, onClose }) {
   const [query, setQuery] = useState("");
-  const matches = products.filter(
-    (product) =>
-      product.stock > 0 &&
-      `${product.itemNumber} ${product.name} ${product.category}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-  );
+  const searchStarted = Boolean(query.trim());
+  const matches = searchStarted
+    ? products.filter(
+        (product) =>
+          product.stock > 0 &&
+          `${product.itemNumber} ${product.name} ${product.category}`
+            .toLowerCase()
+            .includes(query.toLowerCase()),
+      )
+    : [];
   const pendingSelection = useLookupShortcut(matches, onSelect);
   return (
     <div className="inventory-lookup-backdrop" onMouseDown={onClose}>
@@ -2595,8 +2707,10 @@ function InventoryLookup({ products, onSelect, onClose }) {
               <b>{money.format(product.price)}</b>
             </button>
           ))}
-          {!matches.length && (
-            <p>No available inventory matches your search.</p>
+          {!searchStarted ? (
+            <p>Enter a search term to view available inventory.</p>
+          ) : (
+            !matches.length && <p>No available inventory matches your search.</p>
           )}
         </div>
       </section>
@@ -2605,11 +2719,14 @@ function InventoryLookup({ products, onSelect, onClose }) {
 }
 function CustomerLookup({ customers, onSelect, onClose }) {
   const [query, setQuery] = useState("");
-  const matches = customers.filter((customer) =>
-    `${customer.name} ${customer.phone ?? ""} ${customer.email}`
-      .toLowerCase()
-      .includes(query.toLowerCase()),
-  );
+  const searchStarted = Boolean(query.trim());
+  const matches = searchStarted
+    ? customers.filter((customer) =>
+        `${customer.name} ${customer.phone ?? ""} ${customer.email}`
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+      )
+    : [];
   const pendingSelection = useLookupShortcut(matches, onSelect);
   return (
     <div className="inventory-lookup-backdrop" onMouseDown={onClose}>
@@ -2656,7 +2773,11 @@ function CustomerLookup({ customers, onSelect, onClose }) {
               </div>
             </button>
           ))}
-          {!matches.length && <p>No customers match your search.</p>}
+          {!searchStarted ? (
+            <p>Enter a search term to view customers.</p>
+          ) : (
+            !matches.length && <p>No customers match your search.</p>
+          )}
         </div>
       </section>
     </div>

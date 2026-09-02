@@ -39,6 +39,12 @@ const bundledProducts = browserSeedData.products?.length
 const bundledCustomers = browserSeedData.customers?.length
   ? browserSeedData.customers
   : initialCustomers;
+const salesAssociates = [
+  { employeeNumber: "800027", name: "Tim Eggenberger", email: "tim.eggenberger@example.com" },
+  { employeeNumber: "800143", name: "Jordan Ellis", email: "jordan.ellis@example.com" },
+  { employeeNumber: "800258", name: "Avery Patel", email: "avery.patel@example.com" },
+  { employeeNumber: "800391", name: "Morgan James", email: "morgan.james@example.com" },
+];
 
 function Icon({ name }) {
   const icons = {
@@ -66,6 +72,14 @@ function DeliveryTruckIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M3 6h11v10H3zM14 10h4l3 3v3h-7zM7 18a2 2 0 1 0 0 .01M18 18a2 2 0 1 0 0 .01" />
+    </svg>
+  );
+}
+
+function BarcodeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 4v16M6 4v16M9 4v16M12 4v16M15 4v16M19 4v16M21 4v16" />
     </svg>
   );
 }
@@ -114,6 +128,11 @@ export default function App() {
   const [modal, setModal] = useState(null);
   const [notice, setNotice] = useState("");
   const [ticketScreen, setTicketScreen] = useState("menu");
+  const [mobileTicketActive, setMobileTicketActive] = useState(false);
+  const [mobileTicketSection, setMobileTicketSection] = useState("cart");
+  const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
+  const mobileScanHoldTimer = useRef(null);
+  const mobileScanButtonHeld = useRef(false);
   const [ticketQuery, setTicketQuery] = useState("");
   const [pendingCommand, setPendingCommand] = useState("");
   const [appearance, setAppearance] = useState(() => {
@@ -353,7 +372,7 @@ export default function App() {
   const palette = palettes[appearance.palette];
   return (
     <div
-      className={`app-shell ${appearance.dark ? "dark-mode" : ""} ${appearance.text === "terminal" ? "terminal-text" : ""} ${appearance.dark && appearance.text === "terminal" && appearance.palette === "matrix" ? "matrix-terminal" : ""}`}
+      className={`app-shell ${appearance.dark ? "dark-mode" : ""} ${appearance.text === "terminal" ? "terminal-text" : ""} ${appearance.dark && appearance.text === "terminal" && appearance.palette === "matrix" ? "matrix-terminal" : ""} ${mobileTicketActive ? `mobile-ticket-active mobile-ticket-${mobileTicketSection}` : ""}`}
       style={{ "--accent": palette.accent, "--ink": palette.ink }}
     >
       <aside className="sidebar">
@@ -435,10 +454,16 @@ export default function App() {
               onExit={() => {
                 setView("Dashboard");
                 setTicketScreen("menu");
+                setMobileTicketActive(false);
               }}
               onComplete={(delivery) => {
                 toast(`Sales ticket completed — receipt: ${delivery}.`);
                 setTicketScreen("menu");
+                setMobileTicketActive(false);
+              }}
+              onMobileSaleStart={() => {
+                setMobileTicketActive(true);
+                setMobileTicketSection("cart");
               }}
             />
           </CustomerContext.Provider>
@@ -640,6 +665,99 @@ export default function App() {
           </section>
         )}
       </main>
+      <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
+        {(mobileTicketActive
+          ? [
+              ["home", "Home", "dashboard"],
+              ["cart", "Cart", "sale"],
+              ["customer", "Customer", "customers"],
+              ["payment", "Payment", "reports"],
+            ]
+          : [
+              ["Dashboard", "Dashboard", "dashboard"],
+              ["Sales Ticket Processing", "Sales Tkt", "sale"],
+              ["Inventory Management", "Inv.", "inventory"],
+              ["Sales Analysis & Commissions", "Comm.", "reports"],
+            ]
+        ).map(([name, label, icon]) => (
+          <button
+            key={name}
+            className={
+              mobileTicketActive
+                ? mobileTicketSection === name
+                  ? "active"
+                  : ""
+                : view === name
+                  ? "active"
+                  : ""
+            }
+            onClick={() => {
+              if (mobileTicketActive) {
+                if (name === "home") {
+                  setView("Dashboard");
+                  setTicketScreen("menu");
+                  setMobileTicketActive(false);
+                  return;
+                }
+                setMobileTicketSection(name);
+                document
+                  .querySelector(`[data-mobile-ticket-section="${name}"]`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                return;
+              }
+              setView(name);
+              if (name === "Sales Ticket Processing")
+                setTicketScreen(
+                  window.matchMedia("(max-width: 650px)").matches
+                    ? "entry"
+                    : "menu",
+                );
+            }}
+          >
+            <Icon name={icon} />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+      {mobileTicketActive && (
+        <button
+          className="mobile-scan-button"
+          type="button"
+          onPointerDown={() => {
+            mobileScanButtonHeld.current = false;
+            mobileScanHoldTimer.current = window.setTimeout(() => {
+              mobileScanButtonHeld.current = true;
+              window.dispatchEvent(new CustomEvent("mobile-product-lookup"));
+            }, 550);
+          }}
+          onPointerUp={() => window.clearTimeout(mobileScanHoldTimer.current)}
+          onPointerCancel={() => window.clearTimeout(mobileScanHoldTimer.current)}
+          onContextMenu={(event) => event.preventDefault()}
+          onClick={() => {
+            if (mobileScanButtonHeld.current) {
+              mobileScanButtonHeld.current = false;
+              return;
+            }
+            setBarcodeScannerOpen(true);
+          }}
+          aria-label="Tap to scan a product barcode. Press and hold to search inventory."
+          title="Tap to scan · Press and hold to search"
+        >
+          <BarcodeIcon />
+          <span>Hold to search</span>
+        </button>
+      )}
+      {barcodeScannerOpen && (
+        <BarcodeScanner
+          onClose={() => setBarcodeScannerOpen(false)}
+          onScan={(barcode) => {
+            window.dispatchEvent(
+              new CustomEvent("product-barcode-scanned", { detail: barcode }),
+            );
+            setBarcodeScannerOpen(false);
+          }}
+        />
+      )}
       {modal && (
         <Modal
           title={`${modal.item ? "Edit" : "Add"} ${modal.type === "product" ? "product" : "customer"}`}
@@ -910,7 +1028,13 @@ function ProductProfileFields({ description, product }) {
     </div>
   );
 }
-function TicketEntry({ products, customers, onExit, onComplete }) {
+function TicketEntry({
+  products,
+  customers,
+  onExit,
+  onComplete,
+  onMobileSaleStart,
+}) {
   const fieldOrder = [
     ["1", "Sales number", "salesNumber"],
     ["2", "Date", "date"],
@@ -964,6 +1088,7 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
     resale: "",
   });
   const [activeIndex, setActiveIndex] = useState(0);
+  const [mobileSaleStarted, setMobileSaleStarted] = useState(false);
   const [fieldJump, setFieldJump] = useState(null);
   const [topCommand, setTopCommand] = useState("");
   const [exitPrompt, setExitPrompt] = useState(false);
@@ -974,6 +1099,8 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
   const [shippingDetailsOpen, setShippingDetailsOpen] = useState(false);
   const [shippingDeliveryOption, setShippingDeliveryOption] = useState("Ship to Store");
   const [shippingServiceLevel, setShippingServiceLevel] = useState("Ground - Free");
+  const [associateLookupOpen, setAssociateLookupOpen] = useState(false);
+  const [associateQuery, setAssociateQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedNextItem, setSelectedNextItem] = useState(null);
   const [ticketLines, setTicketLines] = useState([
@@ -1364,6 +1491,15 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
       line.product && line.fulfillment && line.fulfillment !== "In-store",
   );
   const hasTicketItems = ticketLines.some((line) => line.product);
+  const creditedAssociate =
+    salesAssociates.find(
+      (associate) => associate.employeeNumber === values.salesperson,
+    ) ?? salesAssociates[0];
+  const associateMatches = salesAssociates.filter((associate) =>
+    `${associate.name} ${associate.email} ${associate.employeeNumber}`
+      .toLowerCase()
+      .includes(associateQuery.toLowerCase()),
+  );
   const shippingRates = {
     "Ground - Free": 0,
     "2nd-Day Express - $29.99": 29.99,
@@ -1476,7 +1612,39 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
     );
   };
   return (
-    <section className="ticket-entry">
+    <section
+      className={`ticket-entry ${mobileSaleStarted ? "mobile-ticket-started" : "mobile-ticket-choice"}`}
+    >
+      <section className="mobile-sale-start">
+        <p className="eyebrow">SALES TICKET</p>
+        <h2>What would you like to process?</h2>
+        <div className="mobile-sale-choices">
+          <button
+            type="button"
+            onClick={() => {
+              setValues((current) => ({ ...current, salesType: "01" }));
+              setMobileSaleStarted(true);
+              onMobileSaleStart();
+            }}
+          >
+            <span>+</span>
+            <strong>Regular Sale</strong>
+            <small>Start a new sales ticket</small>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setValues((current) => ({ ...current, salesType: "11" }));
+              setMobileSaleStarted(true);
+              onMobileSaleStart();
+            }}
+          >
+            <span>↩</span>
+            <strong>Return</strong>
+            <small>Process a customer return</small>
+          </button>
+        </div>
+      </section>
       <div className="ticket-bar">
         <span>F4 or TOP to exit ticket</span>
         <span>1 · Sales Ticket Entry</span>
@@ -1506,31 +1674,42 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
         {input("reference")}
         {input("salesperson")}
       </div>
-      <TicketLineItems
-        products={products}
-        lines={ticketLines}
-        onChange={setTicketLines}
-        firstItemInputRef={firstLineItemRef}
-        onFirstItemFocus={() =>
-          setActiveIndex(fieldOrder.findIndex((field) => field[2] === "item"))
-        }
-        onReturnToSalesperson={() => {
-          const salespersonIndex = fieldOrder.findIndex(
-            (field) => field[2] === "salesperson",
-          );
-          setActiveIndex(salespersonIndex);
-          refs.current[salespersonIndex]?.focus();
-        }}
-        onProceedToCustomer={() => {
-          const customerIndex = fieldOrder.findIndex(
-            (field) => field[2] === "customerId",
-          );
-          setActiveIndex(customerIndex);
-          refs.current[customerIndex]?.focus();
-        }}
-      />
+      <div data-mobile-ticket-section="cart">
+        <div className="mobile-associate-header">
+          <div>
+            <span>Associate credit</span>
+            <strong>{creditedAssociate.name}</strong>
+          </div>
+          <button type="button" onClick={() => setAssociateLookupOpen(true)}>
+            Reassign
+          </button>
+        </div>
+        <TicketLineItems
+          products={products}
+          lines={ticketLines}
+          onChange={setTicketLines}
+          firstItemInputRef={firstLineItemRef}
+          onFirstItemFocus={() =>
+            setActiveIndex(fieldOrder.findIndex((field) => field[2] === "item"))
+          }
+          onReturnToSalesperson={() => {
+            const salespersonIndex = fieldOrder.findIndex(
+              (field) => field[2] === "salesperson",
+            );
+            setActiveIndex(salespersonIndex);
+            refs.current[salespersonIndex]?.focus();
+          }}
+          onProceedToCustomer={() => {
+            const customerIndex = fieldOrder.findIndex(
+              (field) => field[2] === "customerId",
+            );
+            setActiveIndex(customerIndex);
+            refs.current[customerIndex]?.focus();
+          }}
+        />
+      </div>
       <div className="ticket-lower">
-        <section className="customer-panel panel">
+        <section className="customer-panel panel" data-mobile-ticket-section="customer">
           <div className="panel-title">
             <div>
               <p className="eyebrow">CUSTOMER INFORMATION</p>
@@ -1597,7 +1776,7 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
           </div>
         </aside>
       </div>
-      <section className="payment-panel panel">
+      <section className="payment-panel panel" data-mobile-ticket-section="payment">
         <div className="panel-title">
           <div>
             <p className="eyebrow">PAYMENTS</p>
@@ -1964,6 +2143,48 @@ function TicketEntry({ products, customers, onExit, onComplete }) {
           </div>
         </Modal>
       )}
+      {associateLookupOpen && (
+        <Modal
+          title="Reassign associate"
+          onClose={() => {
+            setAssociateLookupOpen(false);
+            setAssociateQuery("");
+          }}
+        >
+          <div className="lookup-search">
+            <Icon name="search" />
+            <input
+              autoFocus
+              value={associateQuery}
+              onChange={(event) => setAssociateQuery(event.target.value)}
+              placeholder="Name, email, or employee number"
+            />
+          </div>
+          <div className="lookup-results associate-lookup-results">
+            {associateMatches.map((associate) => (
+              <button
+                key={associate.employeeNumber}
+                type="button"
+                onClick={() => {
+                  setValues((current) => ({
+                    ...current,
+                    salesperson: associate.employeeNumber,
+                  }));
+                  setAssociateLookupOpen(false);
+                  setAssociateQuery("");
+                }}
+              >
+                <div>
+                  <strong>{associate.name}</strong>
+                  <span>{associate.email}</span>
+                  <small>Employee #{associate.employeeNumber}</small>
+                </div>
+              </button>
+            ))}
+            {!associateMatches.length && <p>No associates match your search.</p>}
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }
@@ -1986,6 +2207,62 @@ function TicketLineItems({
   const [addOnLine, setAddOnLine] = useState(null);
   const [imageProduct, setImageProduct] = useState(null);
   const [actionLine, setActionLine] = useState(null);
+  useEffect(() => {
+    const addScannedProduct = (event) => {
+      const barcode = String(event.detail ?? "").trim();
+      const product = products.find(
+        (candidate) =>
+          candidate.itemNumber === barcode || candidate.id === barcode,
+      );
+      if (!product) return;
+      onChange((current) => {
+        const nextLine = {
+          itemNumber: product.itemNumber,
+          product,
+          quantity: "1",
+          price: String(product.price),
+          coverage: null,
+          fulfillment: fulfillmentLabel(product.location),
+        };
+        const availableIndex = current.findIndex((line) => !line.product);
+        return availableIndex >= 0
+          ? current.map((line, index) =>
+              index === availableIndex ? nextLine : line,
+            )
+          : [...current, nextLine];
+      });
+    };
+    window.addEventListener("product-barcode-scanned", addScannedProduct);
+    return () =>
+      window.removeEventListener("product-barcode-scanned", addScannedProduct);
+  }, [products, onChange]);
+  useEffect(() => {
+    const openMobileProductLookup = () => {
+      const availableIndex = lines.findIndex((line) => !line.product);
+      if (availableIndex >= 0) {
+        setLookupLine(availableIndex);
+        return;
+      }
+      setLookupLine(lines.length);
+      onChange((current) => [
+        ...current,
+        {
+          itemNumber: "",
+          product: null,
+          quantity: "",
+          price: "",
+          coverage: null,
+          fulfillment: "",
+        },
+      ]);
+    };
+    window.addEventListener("mobile-product-lookup", openMobileProductLookup);
+    return () =>
+      window.removeEventListener(
+        "mobile-product-lookup",
+        openMobileProductLookup,
+      );
+  }, [lines, onChange]);
   const selectFieldText = (event) => event.currentTarget.select?.();
   const lineRefs = useRef([]);
   const isCoverageEligible = (line) =>
@@ -2136,7 +2413,10 @@ function TicketLineItems({
         <span>Enter an item number, or . then Enter to search inventory</span>
       </div>
       {lines.map((line, index) => (
-        <div className="dynamic-line" key={index}>
+        <div
+          className={`dynamic-line ${line.product ? "" : "empty-mobile-line"}`}
+          key={index}
+        >
           <b>{`9.${String(index + 1).padStart(2, "0")}`}</b>
           <div className="item-number-control">
             <input
@@ -3040,6 +3320,83 @@ function SalesPersonMaster() {
         </table>
       </div>
     </section>
+  );
+}
+function BarcodeScanner({ onClose, onScan }) {
+  const videoRef = useRef(null);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let controls;
+    let stopped = false;
+    const startScanner = async () => {
+      try {
+        const [{ BrowserMultiFormatOneDReader, BarcodeFormat }, { DecodeHintType }] =
+          await Promise.all([import("@zxing/browser"), import("@zxing/library")]);
+        if (stopped) return;
+        const hints = new Map([
+          [
+            DecodeHintType.POSSIBLE_FORMATS,
+            [
+              BarcodeFormat.UPC_A,
+              BarcodeFormat.UPC_E,
+              BarcodeFormat.EAN_13,
+              BarcodeFormat.EAN_8,
+              BarcodeFormat.CODE_128,
+              BarcodeFormat.CODE_39,
+              BarcodeFormat.ITF,
+            ],
+          ],
+        ]);
+        const reader = new BrowserMultiFormatOneDReader(hints, {
+          delayBetweenScanAttempts: 150,
+        });
+        const nextControls = await reader.decodeFromConstraints(
+          {
+            audio: false,
+            video: { facingMode: { ideal: "environment" } },
+          },
+          videoRef.current,
+          (result) => {
+            if (!result || stopped) return;
+            stopped = true;
+            controls?.stop();
+            onScan(result.getText());
+          },
+        );
+        controls = nextControls;
+        if (stopped) controls.stop();
+      } catch {
+        if (!stopped)
+          setError(
+            "Camera access was unavailable. Check camera permission and try again.",
+          );
+      }
+    };
+    startScanner();
+    return () => {
+      stopped = true;
+      controls?.stop();
+    };
+  }, [onScan]);
+  return (
+    <div className="barcode-scanner-backdrop" onMouseDown={onClose}>
+      <section
+        className="barcode-scanner"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="modal-title">
+          <h2>Scan barcode</h2>
+          <button onClick={onClose} aria-label="Close scanner">
+            <Icon name="close" />
+          </button>
+        </div>
+        <p>Center the product barcode inside the camera view.</p>
+        {error ? <p className="scanner-error">{error}</p> : <video ref={videoRef} muted playsInline />}
+        <button className="primary scanner-cancel" type="button" onClick={onClose}>
+          Cancel
+        </button>
+      </section>
+    </div>
   );
 }
 function Modal({ title, children, onClose }) {

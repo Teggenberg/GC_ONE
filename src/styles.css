@@ -2477,6 +2477,58 @@ body {
 .sidebar-bottom {
   margin-top: auto;
 }
+.mobile-bottom-nav {
+  display: none;
+}
+.mobile-sale-start {
+  display: none;
+}
+.mobile-associate-header {
+  display: none;
+}
+.mobile-scan-button {
+  display: none;
+}
+.barcode-scanner-backdrop {
+  position: fixed;
+  z-index: 12;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: #071025c9;
+}
+.barcode-scanner {
+  width: min(440px, 100%);
+  border-radius: 12px;
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 18px 55px #0007;
+}
+.barcode-scanner > p {
+  margin: 0 0 14px;
+  color: #68758a;
+  font-size: 13px;
+}
+.barcode-scanner video {
+  display: block;
+  width: 100%;
+  min-height: 240px;
+  border-radius: 8px;
+  background: #111827;
+  object-fit: cover;
+}
+.scanner-error {
+  border: 1px solid #e0a4a4;
+  border-radius: 7px;
+  background: #fff4f4;
+  color: #9b3434 !important;
+  padding: 11px;
+}
+.scanner-cancel {
+  width: 100%;
+  margin-top: 14px;
+}
 .sidebar-bottom > button {
   display: flex;
   align-items: center;
@@ -3102,7 +3154,282 @@ td strong {
     display: none;
   }
   main {
-    padding: 20px 16px 0;
+    padding: 20px 16px calc(82px + env(safe-area-inset-bottom));
+  }
+  .mobile-bottom-nav {
+    position: fixed;
+    z-index: 1;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    border-top: 1px solid #283248;
+    background: #0a1020;
+    box-shadow: 0 -6px 18px #0206112e;
+  }
+  .mobile-bottom-nav button {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: #97a1b5;
+    padding: 7px 2px;
+    font: 500 9px "DM Sans";
+    cursor: pointer;
+  }
+  .mobile-bottom-nav .icon {
+    width: auto;
+    font-size: 18px;
+  }
+  .mobile-bottom-nav button.active {
+    background: #202a40;
+    color: #fff;
+  }
+  .mobile-ticket-active .mobile-scan-button {
+    position: fixed;
+    z-index: 2;
+    bottom: calc(66px + env(safe-area-inset-bottom));
+    left: 50%;
+    display: grid;
+    width: 116px;
+    height: 58px;
+    place-items: center;
+    translate: -50% 0;
+    border: 2px solid #fff;
+    border-radius: 22px;
+    background: var(--accent);
+    color: #25334c;
+    box-shadow: 0 6px 18px #0710254d;
+    cursor: pointer;
+  }
+  .mobile-scan-button svg {
+    width: 23px;
+    height: 23px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+  }
+  .mobile-scan-button span {
+    margin-top: -5px;
+    font: 600 9px "DM Sans";
+    text-transform: lowercase;
+  }
+  .matrix-terminal .mobile-bottom-nav {
+    border-color: #1b6b34;
+    background: #010702;
+  }
+  .matrix-terminal .mobile-bottom-nav button.active {
+    background: #061b0c;
+    color: #6dff8a;
+  }
+  .mobile-sale-start {
+    display: block;
+    padding: 20px 4px;
+  }
+  .mobile-sale-start h2 {
+    margin: 6px 0 22px;
+    color: #25334c;
+    font-size: 23px;
+  }
+  .mobile-sale-choices {
+    display: grid;
+    gap: 12px;
+  }
+  .mobile-sale-choices button {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    column-gap: 12px;
+    align-items: center;
+    border: 1px solid #dbe1e9;
+    border-radius: 10px;
+    background: #fff;
+    color: #25334c;
+    padding: 17px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .mobile-sale-choices button > span {
+    grid-row: span 2;
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--accent) 24%, #fff);
+    color: #25334c;
+    font-size: 22px;
+  }
+  .mobile-sale-choices strong {
+    font-size: 15px;
+  }
+  .mobile-sale-choices small {
+    margin-top: 3px;
+    color: #738096;
+    font-size: 11px;
+  }
+  .mobile-ticket-choice > :not(.mobile-sale-start) {
+    display: none;
+  }
+  .mobile-ticket-started .mobile-sale-start {
+    display: none;
+  }
+  .mobile-ticket-cart .ticket-entry .ticket-top-fields,
+  .mobile-ticket-cart .ticket-entry .ticket-entry-head,
+  .mobile-ticket-cart .ticket-entry .ticket-items .panel-title,
+  .mobile-ticket-cart .ticket-entry .ticket-lower,
+  .mobile-ticket-cart .ticket-entry .payment-panel {
+    display: none;
+  }
+  .mobile-ticket-active main > header {
+    display: none;
+  }
+  .mobile-ticket-active main {
+    padding-top: calc(68px + env(safe-area-inset-top));
+  }
+  .mobile-ticket-active .mobile-associate-header {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0;
+    padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+    border-bottom: 1px solid #dbe1e9;
+    background: #fff;
+    box-shadow: 0 4px 10px #14213b0d;
+  }
+  .mobile-associate-header span,
+  .mobile-associate-header strong {
+    display: block;
+  }
+  .mobile-associate-header span {
+    color: #738096;
+    font: 9px "DM Mono";
+  }
+  .mobile-associate-header strong {
+    margin-top: 2px;
+    color: #25334c;
+    font-size: 13px;
+  }
+  .mobile-associate-header button {
+    border: 1px solid var(--accent);
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--accent) 18%, #fff);
+    color: #25334c;
+    padding: 7px 10px;
+    font: 600 11px "DM Sans";
+    cursor: pointer;
+  }
+  .ticket-entry .ticket-bar,
+  .ticket-entry .ticket-focus-readout,
+  .ticket-entry .field-jump-readout {
+    display: none;
+  }
+  .ticket-entry .ticket-field > span b,
+  .ticket-entry .dynamic-line > b {
+    display: none;
+  }
+  .ticket-entry .dynamic-line {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0 0 12px;
+    border: 1px solid #dbe1e9;
+    border-radius: 9px;
+    background: #fff;
+    padding: 12px;
+  }
+  .ticket-entry .dynamic-line > .item-number-control,
+  .ticket-entry .dynamic-line > .line-description-area,
+  .ticket-entry .dynamic-line > select {
+    grid-column: 1 / -1;
+  }
+  .mobile-ticket-active .ticket-entry .dynamic-line > .item-number-control,
+  .mobile-ticket-active .ticket-entry .dynamic-line.empty-mobile-line {
+    display: none;
+  }
+  .ticket-entry .dynamic-line > input {
+    grid-column: auto;
+  }
+  .ticket-entry .line-description-area {
+    grid-template-columns: 68px minmax(0, 1fr);
+    gap: 11px !important;
+  }
+  .ticket-entry .line-description-area .item-description-text {
+    max-width: none;
+    font-size: 13px;
+  }
+  .ticket-entry .line-description-area .ticket-thumbnail-button img {
+    width: 68px;
+    height: 54px;
+  }
+  .ticket-entry .line-description-area .line-action-group {
+    grid-column: 1 / -1;
+    grid-template-columns: 21px 38px 28px 28px 28px;
+    justify-content: space-between;
+    gap: 0;
+    width: 100%;
+    padding-top: 4px;
+  }
+  .dark-mode .ticket-entry .dynamic-line {
+    border-color: #2d3950;
+    background: #192235;
+  }
+  .matrix-terminal .ticket-entry .dynamic-line {
+    border-color: #21773b;
+    background: #041108;
+  }
+  .dark-mode .mobile-sale-start h2,
+  .dark-mode .mobile-sale-choices strong {
+    color: #edf3fb;
+  }
+  .dark-mode .mobile-sale-choices button {
+    border-color: #2d3950;
+    background: #192235;
+    color: #edf3fb;
+  }
+  .dark-mode .mobile-sale-choices small {
+    color: #aab6c9;
+  }
+  .dark-mode .mobile-associate-header {
+    border-color: #2d3950;
+    background: #192235;
+  }
+  .dark-mode .mobile-associate-header span {
+    color: #aab6c9;
+  }
+  .dark-mode .mobile-associate-header strong {
+    color: #edf3fb;
+  }
+  .dark-mode .mobile-associate-header button {
+    background: color-mix(in srgb, var(--accent) 18%, #141d2e);
+    color: #edf3fb;
+  }
+  .dark-mode .barcode-scanner {
+    background: #192235;
+  }
+  .dark-mode .barcode-scanner > p {
+    color: #aab6c9;
+  }
+  .matrix-terminal .mobile-sale-choices button {
+    border-color: #21773b;
+    background: #041108;
+    color: #6dff8a;
+  }
+  .matrix-terminal .mobile-associate-header {
+    border-color: #21773b;
+    background: #041108;
+  }
+  .matrix-terminal .mobile-associate-header strong,
+  .matrix-terminal .mobile-associate-header button {
+    color: #6dff8a;
   }
   .product-grid {
     grid-template-columns: repeat(2, 1fr);

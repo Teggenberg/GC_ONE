@@ -84,6 +84,22 @@ function BarcodeIcon() {
   );
 }
 
+function ShoppingCartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 4h2l2.1 10.2a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 1.9-1.5L21 8H6.1M10 20a1.2 1.2 0 1 0 0 .01M18 20a1.2 1.2 0 1 0 0 .01" />
+    </svg>
+  );
+}
+
+function TrashCanIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" />
+    </svg>
+  );
+}
+
 export default function App() {
   const [view, setView] = useState("Sales Ticket Processing");
   const [products, setProducts] = useState(() => {
@@ -1486,6 +1502,11 @@ function TicketEntry({
       Number(line.coverage?.price || 0),
     0,
   );
+  const ticketItemCount = ticketLines.reduce(
+    (count, line) =>
+      count + (line.product ? Math.max(0, Number(line.quantity) || 0) : 0),
+    0,
+  );
   const remoteFulfillmentLines = ticketLines.filter(
     (line) =>
       line.product && line.fulfillment && line.fulfillment !== "In-store",
@@ -1683,6 +1704,14 @@ function TicketEntry({
           <button type="button" onClick={() => setAssociateLookupOpen(true)}>
             Reassign
           </button>
+          <div className="mobile-basket-summary">
+            <span>
+              <b>{ticketItemCount}</b> {ticketItemCount === 1 ? "item" : "items"}
+            </span>
+            <span>
+              Subtotal <b>{money.format(saleTotal)}</b>
+            </span>
+          </div>
         </div>
         <TicketLineItems
           products={products}
@@ -1742,6 +1771,24 @@ function TicketEntry({
             {input("state")}
             {input("phone", { type: "tel" })}
             {input("resale")}
+          </div>
+          <div className="mobile-customer-actions">
+            <button
+              className="customer-search-button"
+              type="button"
+              onClick={() => setCustomerSearch(true)}
+            >
+              <Icon name="search" /> Search customer
+            </button>
+            {remoteFulfillmentLines.length > 0 && (
+              <button
+                className="customer-search-button"
+                type="button"
+                onClick={() => setShippingDetailsOpen(true)}
+              >
+                Shipping Details
+              </button>
+            )}
           </div>
         </section>
         <aside className="ticket-totals panel">
@@ -1846,6 +1893,11 @@ function TicketEntry({
                           event.preventDefault();
                           updatePayment(index, "type", selectedType);
                           setPaymentCodeEntry(null);
+                          setActiveIndex(amountFieldIndex);
+                          window.setTimeout(
+                            () => paymentRefs.current[index]?.amount?.focus(),
+                            0,
+                          );
                           return;
                         }
                       }
@@ -1868,7 +1920,12 @@ function TicketEntry({
                               onClick={() => {
                                 updatePayment(index, "type", type);
                                 setPaymentCodeEntry(null);
-                                paymentRefs.current[index]?.type?.focus();
+                                setActiveIndex(amountFieldIndex);
+                                window.setTimeout(
+                                  () =>
+                                    paymentRefs.current[index]?.amount?.focus(),
+                                  0,
+                                );
                               }}
                             >
                               <b>{code}</b>
@@ -2143,6 +2200,19 @@ function TicketEntry({
           </div>
         </Modal>
       )}
+      {customerSearch && (
+        <CustomerLookup
+          customers={customers}
+          enableNumberShortcut={false}
+          onSelect={(customer) => {
+            window.dispatchEvent(
+              new CustomEvent("customer-selected", { detail: customer }),
+            );
+            setCustomerSearch(false);
+          }}
+          onClose={() => setCustomerSearch(false)}
+        />
+      )}
       {associateLookupOpen && (
         <Modal
           title="Reassign associate"
@@ -2236,6 +2306,29 @@ function TicketLineItems({
     return () =>
       window.removeEventListener("product-barcode-scanned", addScannedProduct);
   }, [products, onChange]);
+  const lineCardRefs = useRef([]);
+  const previousLineProductIds = useRef([]);
+  useEffect(() => {
+    const previousIds = previousLineProductIds.current;
+    const newestItemIndex = lines.reduce(
+      (newestIndex, line, index) =>
+        line.product && line.product.id !== previousIds[index]
+          ? index
+          : newestIndex,
+      -1,
+    );
+    previousLineProductIds.current = lines.map((line) => line.product?.id);
+    if (newestItemIndex < 0 || !window.matchMedia("(max-width: 650px)").matches)
+      return;
+    window.setTimeout(
+      () =>
+        lineCardRefs.current[newestItemIndex]?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        }),
+      0,
+    );
+  }, [lines]);
   useEffect(() => {
     const openMobileProductLookup = () => {
       const availableIndex = lines.findIndex((line) => !line.product);
@@ -2416,9 +2509,27 @@ function TicketLineItems({
         <div
           className={`dynamic-line ${line.product ? "" : "empty-mobile-line"}`}
           key={index}
+          ref={(element) => {
+            lineCardRefs.current[index] = element;
+          }}
         >
           <b>{`9.${String(index + 1).padStart(2, "0")}`}</b>
+          {line.product && (
+            <button
+              className="mobile-remove-item-button"
+              type="button"
+              onClick={() =>
+                onChange((current) =>
+                  current.filter((_, lineIndex) => lineIndex !== index),
+                )
+              }
+              aria-label={`Remove ${line.product.name} from cart`}
+            >
+              <TrashCanIcon />
+            </button>
+          )}
           <div className="item-number-control">
+            <span className="mobile-item-number">Item #{line.itemNumber}</span>
             <input
               ref={(element) => {
                 lineRefs.current[index] ??= {};
@@ -2603,6 +2714,12 @@ function TicketLineItems({
           </select>
         </div>
       ))}
+      {!lines.some((line) => line.product) && (
+        <div className="mobile-empty-ticket-cart">
+          <ShoppingCartIcon />
+          <span>Empty cart</span>
+        </div>
+      )}
       {lookupLine !== null && (
         <InventoryLookup
           products={products}
@@ -2909,9 +3026,13 @@ function ProCoverageModal({ product, onSelect, onClose }) {
     </div>
   );
 }
-function useLookupShortcut(matches, onSelect) {
+function useLookupShortcut(matches, onSelect, enabled = true) {
   const [pendingSelection, setPendingSelection] = useState("");
   useEffect(() => {
+    if (!enabled) {
+      setPendingSelection("");
+      return;
+    }
     const handleKey = (event) => {
       if (/^[0-9]$/.test(event.key)) {
         setPendingSelection(event.key);
@@ -2928,7 +3049,7 @@ function useLookupShortcut(matches, onSelect) {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [matches, onSelect, pendingSelection]);
+  }, [enabled, matches, onSelect, pendingSelection]);
   return pendingSelection;
 }
 
@@ -3004,17 +3125,31 @@ function InventoryLookup({ products, onSelect, onClose }) {
     </div>
   );
 }
-function CustomerLookup({ customers, onSelect, onClose }) {
+function CustomerLookup({
+  customers,
+  onSelect,
+  onClose,
+  enableNumberShortcut = true,
+}) {
   const [query, setQuery] = useState("");
+  const [searchMode, setSearchMode] = useState("text");
   const searchStarted = Boolean(query.trim());
   const matches = searchStarted
-    ? customers.filter((customer) =>
-        `${customer.name} ${customer.phone ?? ""} ${customer.email}`
+    ? customers.filter((customer) => {
+        if (searchMode === "phone") {
+          const digits = query.replace(/\D/g, "");
+          return (customer.phone ?? "").replace(/\D/g, "").includes(digits);
+        }
+        return `${customer.name} ${customer.email}`
           .toLowerCase()
-          .includes(query.toLowerCase()),
-      )
+          .includes(query.toLowerCase());
+      })
     : [];
-  const pendingSelection = useLookupShortcut(matches, onSelect);
+  const pendingSelection = useLookupShortcut(
+    matches,
+    onSelect,
+    enableNumberShortcut,
+  );
   return (
     <div className="inventory-lookup-backdrop" onMouseDown={onClose}>
       <section
@@ -3034,8 +3169,36 @@ function CustomerLookup({ customers, onSelect, onClose }) {
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="First name, last name, phone, or email"
+            type={searchMode === "phone" ? "tel" : "search"}
+            inputMode={searchMode === "phone" ? "numeric" : "text"}
+            placeholder={
+              searchMode === "phone"
+                ? "Phone number"
+                : "First name, last name, or email"
+            }
           />
+        </div>
+        <div className="customer-search-modes" aria-label="Customer search type">
+          <button
+            type="button"
+            className={searchMode === "text" ? "selected" : ""}
+            onClick={() => {
+              setSearchMode("text");
+              setQuery("");
+            }}
+          >
+            Name or email
+          </button>
+          <button
+            type="button"
+            className={searchMode === "phone" ? "selected" : ""}
+            onClick={() => {
+              setSearchMode("phone");
+              setQuery("");
+            }}
+          >
+            Phone
+          </button>
         </div>
         {pendingSelection && (
           <p className="lookup-shortcut">

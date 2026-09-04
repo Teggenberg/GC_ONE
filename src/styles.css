@@ -321,6 +321,15 @@
 .customer-panel .customer-search-button {
   margin-top: 8px;
 }
+.mobile-customer-actions {
+  display: none;
+}
+.mobile-empty-ticket-cart {
+  display: none;
+}
+.mobile-remove-item-button {
+  display: none;
+}
 .field-jump-readout {
   position: fixed;
   right: 23px;
@@ -979,6 +988,26 @@
   font: 12px "DM Sans";
   min-width: 0;
 }
+.customer-search-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: 0 0 12px;
+}
+.customer-search-modes button {
+  border: 1px solid #dce2eb;
+  border-radius: 5px;
+  background: #fff;
+  color: #526b88;
+  padding: 8px 10px;
+  font: 600 11px "DM Sans";
+  cursor: pointer;
+}
+.customer-search-modes button.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, #fff);
+  color: #25334c;
+}
 .lookup-results {
   border: 1px solid #e0e5eb;
   border-radius: 7px;
@@ -1060,6 +1089,15 @@
 .dark-mode .lookup-search input {
   background: transparent !important;
   color: #edf3fb !important;
+}
+.dark-mode .customer-search-modes button {
+  border-color: #34425a;
+  background: #141d2e;
+  color: #c7d5e8;
+}
+.dark-mode .customer-search-modes button.selected {
+  background: color-mix(in srgb, var(--accent) 18%, #141d2e);
+  color: #edf3fb;
 }
 .dark-mode .lookup-results button:hover {
   background: #222d43 !important;
@@ -3150,6 +3188,12 @@ td strong {
   }
 }
 @media (max-width: 650px) {
+  /* iOS Safari zooms the page when an editable control is smaller than 16px. */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
   .sidebar {
     display: none;
   }
@@ -3219,6 +3263,10 @@ td strong {
     font: 600 9px "DM Sans";
     text-transform: lowercase;
   }
+  .dark-mode .mobile-scan-button,
+  .matrix-terminal .mobile-scan-button {
+    color: #000;
+  }
   .matrix-terminal .mobile-bottom-nav {
     border-color: #1b6b34;
     background: #010702;
@@ -3285,11 +3333,85 @@ td strong {
   .mobile-ticket-cart .ticket-entry .payment-panel {
     display: none;
   }
+  .mobile-ticket-customer .ticket-entry .ticket-top-fields,
+  .mobile-ticket-customer .ticket-entry .ticket-entry-head,
+  .mobile-ticket-customer .ticket-entry > .ticket-bar,
+  .mobile-ticket-customer .ticket-entry [data-mobile-ticket-section="cart"] .ticket-items,
+  .mobile-ticket-customer .ticket-entry .ticket-totals,
+  .mobile-ticket-customer .ticket-entry .payment-panel {
+    display: none;
+  }
+  .mobile-ticket-customer .ticket-entry .customer-panel {
+    position: fixed;
+    z-index: 0;
+    top: calc(105px + env(safe-area-inset-top));
+    right: 0;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    left: 0;
+    margin: 0;
+    overflow-y: auto;
+    border-radius: 0;
+  }
+  .mobile-ticket-customer .customer-panel .panel-title .customer-search-button {
+    display: none;
+  }
+  .mobile-ticket-customer .mobile-customer-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    margin-top: 16px;
+  }
+  .mobile-ticket-customer .mobile-customer-actions .customer-search-button {
+    justify-content: center;
+    margin: 0;
+  }
+  .mobile-ticket-customer .mobile-customer-actions .customer-search-button:only-child {
+    grid-column: 1 / -1;
+  }
+  .mobile-ticket-customer .mobile-scan-button {
+    display: none !important;
+  }
+  .mobile-ticket-payment .ticket-entry .ticket-top-fields,
+  .mobile-ticket-payment .ticket-entry .ticket-entry-head,
+  .mobile-ticket-payment .ticket-entry > .ticket-bar,
+  .mobile-ticket-payment .ticket-entry [data-mobile-ticket-section="cart"] .ticket-items,
+  .mobile-ticket-payment .ticket-entry .customer-panel {
+    display: none;
+  }
+  .mobile-ticket-payment .ticket-entry .ticket-lower {
+    display: block;
+  }
+  .mobile-ticket-payment .ticket-entry .ticket-totals {
+    margin-bottom: 12px;
+  }
+  .mobile-ticket-payment .ticket-entry .payment-panel {
+    margin: 0;
+  }
+  .mobile-ticket-payment .payment-entry-layout {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .mobile-ticket-payment .payment-line {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .mobile-ticket-payment .payment-line > b {
+    display: none;
+  }
+  .mobile-ticket-payment .payment-line .payment-field {
+    min-width: 0;
+  }
+  .mobile-ticket-payment .payment-line .payment-field input {
+    padding: 7px 0 4px;
+  }
+  .mobile-ticket-payment .mobile-scan-button {
+    display: none !important;
+  }
   .mobile-ticket-active main > header {
     display: none;
   }
   .mobile-ticket-active main {
-    padding-top: calc(68px + env(safe-area-inset-top));
+    padding-top: calc(105px + env(safe-area-inset-top));
   }
   .mobile-ticket-active .mobile-associate-header {
     position: fixed;
@@ -3297,9 +3419,9 @@ td strong {
     right: 0;
     left: 0;
     z-index: 1;
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
     margin: 0;
     padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
     border-bottom: 1px solid #dbe1e9;
@@ -3328,6 +3450,24 @@ td strong {
     font: 600 11px "DM Sans";
     cursor: pointer;
   }
+  .mobile-basket-summary {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #dbe1e9;
+    color: #526b88;
+    font: 10px "DM Sans";
+  }
+  .mobile-basket-summary span,
+  .mobile-basket-summary b {
+    display: inline;
+  }
+  .mobile-basket-summary b {
+    color: #25334c;
+    font-weight: 700;
+  }
   .ticket-entry .ticket-bar,
   .ticket-entry .ticket-focus-readout,
   .ticket-entry .field-jump-readout {
@@ -3346,14 +3486,82 @@ td strong {
     background: #fff;
     padding: 12px;
   }
+  .mobile-ticket-active .ticket-entry .dynamic-line {
+    position: relative;
+  }
+  .mobile-ticket-active .mobile-remove-item-button {
+    position: absolute;
+    z-index: 1;
+    top: 9px;
+    right: 9px;
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border: 1px solid #dbe1e9;
+    border-radius: 6px;
+    background: #fff;
+    color: #728096;
+    cursor: pointer;
+  }
+  .mobile-remove-item-button svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+  }
+  .dark-mode .mobile-remove-item-button {
+    border-color: #3a4860;
+    background: #141d2e;
+    color: #c7d5e8;
+  }
+  .matrix-terminal .mobile-remove-item-button {
+    border-color: #21773b;
+    background: #041108;
+    color: #6dff8a;
+  }
   .ticket-entry .dynamic-line > .item-number-control,
   .ticket-entry .dynamic-line > .line-description-area,
   .ticket-entry .dynamic-line > select {
     grid-column: 1 / -1;
   }
-  .mobile-ticket-active .ticket-entry .dynamic-line > .item-number-control,
   .mobile-ticket-active .ticket-entry .dynamic-line.empty-mobile-line {
     display: none;
+  }
+  .mobile-ticket-cart .mobile-empty-ticket-cart {
+    display: grid;
+    min-height: calc(100dvh - 255px);
+    place-content: center;
+    justify-items: center;
+    gap: 9px;
+    color: #748198;
+    text-transform: uppercase;
+    font: 600 11px "DM Sans";
+    letter-spacing: 0.08em;
+  }
+  .mobile-empty-ticket-cart svg {
+    width: 42px;
+    height: 42px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
+  .mobile-item-number {
+    display: none;
+  }
+  .mobile-ticket-active .ticket-entry .dynamic-line > .item-number-control {
+    display: block !important;
+    min-height: 14px;
+  }
+  .mobile-ticket-active .ticket-entry .item-number-control input,
+  .mobile-ticket-active .ticket-entry .item-number-control .item-search-button {
+    display: none !important;
+  }
+  .mobile-ticket-active .ticket-entry .mobile-item-number {
+    display: block;
+    color: #738096;
+    font: 10px "DM Mono";
   }
   .ticket-entry .dynamic-line > input {
     grid-column: auto;
@@ -3377,6 +3585,7 @@ td strong {
     gap: 0;
     width: 100%;
     padding-top: 4px;
+    padding-bottom: 10px;
   }
   .dark-mode .ticket-entry .dynamic-line {
     border-color: #2d3950;
@@ -3410,6 +3619,13 @@ td strong {
   }
   .dark-mode .mobile-associate-header button {
     background: color-mix(in srgb, var(--accent) 18%, #141d2e);
+    color: #edf3fb;
+  }
+  .dark-mode .mobile-basket-summary {
+    border-color: #2d3950;
+    color: #aab6c9;
+  }
+  .dark-mode .mobile-basket-summary b {
     color: #edf3fb;
   }
   .dark-mode .barcode-scanner {

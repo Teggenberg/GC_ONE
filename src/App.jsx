@@ -1223,7 +1223,8 @@ function TicketEntry({
   }, [topCommand, onExit]);
   useEffect(() => {
     const selectCustomer = (event) => {
-      const customer = event.detail;
+      const selection = event.detail;
+      const customer = selection.customer ?? selection;
       setValues((current) => ({
         ...current,
         customerId: customer.id,
@@ -1235,6 +1236,7 @@ function TicketEntry({
         zip: customer.zip ?? "",
         phone: customer.phone ?? "",
       }));
+      if (selection.focus === false) return;
       const customerIndex = fieldOrder.findIndex(
         (field) => field[2] === "customerId",
       );
@@ -2204,9 +2206,12 @@ function TicketEntry({
         <CustomerLookup
           customers={customers}
           enableNumberShortcut={false}
+          initialSearchMode="phone"
           onSelect={(customer) => {
             window.dispatchEvent(
-              new CustomEvent("customer-selected", { detail: customer }),
+              new CustomEvent("customer-selected", {
+                detail: { customer, focus: false },
+              }),
             );
             setCustomerSearch(false);
           }}
@@ -3130,9 +3135,10 @@ function CustomerLookup({
   onSelect,
   onClose,
   enableNumberShortcut = true,
+  initialSearchMode = "text",
 }) {
   const [query, setQuery] = useState("");
-  const [searchMode, setSearchMode] = useState("text");
+  const [searchMode, setSearchMode] = useState(initialSearchMode);
   const searchStarted = Boolean(query.trim());
   const matches = searchStarted
     ? customers.filter((customer) => {

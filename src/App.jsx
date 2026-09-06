@@ -776,8 +776,10 @@ export default function App() {
             }, 300);
           }}
           onContextMenu={(event) => event.preventDefault()}
-          onClick={(event) => {
-            if (event.detail === 0) setBarcodeScannerOpen(true);
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            setBarcodeScannerOpen(true);
           }}
           aria-label="Tap to scan a product barcode. Double tap to search inventory."
           title="Tap to scan · Double tap to search"
@@ -1154,11 +1156,20 @@ function TicketEntry({
   const [itemError, setItemError] = useState("");
   const refs = useRef([]);
   const paymentRefs = useRef([]);
+  const mobileModalTimer = useRef(null);
   const completeTicketButtonRef = useRef(null);
   const firstLineItemRef = useRef(null);
   useEffect(() => {
     window.setTimeout(() => refs.current[0]?.focus(), 0);
   }, []);
+  useEffect(
+    () => () => window.clearTimeout(mobileModalTimer.current),
+    [],
+  );
+  const scheduleMobileModal = (openModal) => {
+    window.clearTimeout(mobileModalTimer.current);
+    mobileModalTimer.current = window.setTimeout(openModal, 75);
+  };
   const completeWithReceipt = (delivery) => {
     setReceiptDeliveryOpen(false);
     setReceiptDeliveryChoice("");
@@ -1829,10 +1840,12 @@ function TicketEntry({
             <button
               className="customer-search-button"
               type="button"
-              onClick={() => setCustomerSearch(true)}
+              onClick={(event) => {
+                if (event.detail === 0) setCustomerSearch(true);
+              }}
               onPointerUp={(event) => {
                 event.preventDefault();
-                setCustomerSearch(true);
+                scheduleMobileModal(() => setCustomerSearch(true));
               }}
             >
               <Icon name="search" /> Search customer
@@ -1841,10 +1854,12 @@ function TicketEntry({
               <button
                 className="customer-search-button"
                 type="button"
-                onClick={() => setShippingDetailsOpen(true)}
+                onClick={(event) => {
+                  if (event.detail === 0) setShippingDetailsOpen(true);
+                }}
                 onPointerUp={(event) => {
                   event.preventDefault();
-                  setShippingDetailsOpen(true);
+                  scheduleMobileModal(() => setShippingDetailsOpen(true));
                 }}
               >
                 Shipping Details
@@ -2434,6 +2449,15 @@ function TicketLineItems({
     previousLineProductIds.current = lines.map((line) => line.product?.id);
     if (newestItemIndex < 0 || !window.matchMedia("(max-width: 650px)").matches)
       return;
+    const newestLine = lines[newestItemIndex];
+    if (
+      newestLine.product?.proCoverageEligible ??
+      newestLine.product?.pcEligible ??
+      false
+    ) {
+      setCoverageAdvance(false);
+      setCoverageLine(newestItemIndex);
+    }
     window.setTimeout(
       () =>
         lineCardRefs.current[newestItemIndex]?.scrollIntoView({
@@ -2444,31 +2468,39 @@ function TicketLineItems({
     );
   }, [lines]);
   useEffect(() => {
+    let lookupTimer;
     const openMobileProductLookup = () => {
-      const availableIndex = lines.findIndex((line) => !line.product);
-      if (availableIndex >= 0) {
-        setLookupLine(availableIndex);
-        return;
-      }
-      setLookupLine(lines.length);
-      onChange((current) => [
-        ...current,
-        {
-          itemNumber: "",
-          product: null,
-          quantity: "",
-          price: "",
-          coverage: null,
-          fulfillment: "",
-        },
-      ]);
+      window.clearTimeout(lookupTimer);
+      // Let iOS finish the double-tap's compatibility mouse events before
+      // mounting a backdrop that could otherwise receive the final event.
+      lookupTimer = window.setTimeout(() => {
+        const availableIndex = lines.findIndex((line) => !line.product);
+        if (availableIndex >= 0) {
+          setLookupLine(availableIndex);
+          return;
+        }
+        setLookupLine(lines.length);
+        onChange((current) => [
+          ...current,
+          {
+            itemNumber: "",
+            product: null,
+            quantity: "",
+            price: "",
+            coverage: null,
+            fulfillment: "",
+          },
+        ]);
+      }, 75);
     };
     window.addEventListener("mobile-product-lookup", openMobileProductLookup);
-    return () =>
+    return () => {
+      window.clearTimeout(lookupTimer);
       window.removeEventListener(
         "mobile-product-lookup",
         openMobileProductLookup,
       );
+    };
   }, [lines, onChange]);
   const selectFieldText = (event) => event.currentTarget.select?.();
   const lineRefs = useRef([]);

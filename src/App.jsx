@@ -2915,12 +2915,17 @@ function TicketLineItems({
                     : addLine(),
                 0,
               );
-            else focusLineField(currentLine, "quantity");
+            else if (!window.matchMedia("(max-width: 650px)").matches)
+              focusLineField(currentLine, "quantity");
           }}
           onClose={() => {
             setCoverageLine(null);
             setCoverageAdvance(false);
-            if (!coverageAdvance) focusLineField(coverageLine, "quantity");
+            if (
+              !coverageAdvance &&
+              !window.matchMedia("(max-width: 650px)").matches
+            )
+              focusLineField(coverageLine, "quantity");
           }}
         />
       )}

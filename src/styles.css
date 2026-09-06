@@ -936,7 +936,7 @@
 }
 .inventory-lookup-backdrop {
   position: fixed;
-  z-index: 11;
+  z-index: 31;
   inset: 0;
   background: #07102577;
   display: grid;
@@ -1511,6 +1511,32 @@
   color: #68758a;
   font: 10px "DM Mono";
 }
+.shipping-review-intro {
+  margin: 0 0 14px;
+  color: #59697f;
+  font-size: 12px;
+}
+.shipping-review-summary {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+.shipping-review-summary > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid #e1e6ed;
+  padding-bottom: 8px;
+  color: #68758a;
+  font-size: 11px;
+}
+.shipping-review-summary strong {
+  color: #25334c;
+  text-align: right;
+}
+.shipping-review-actions {
+  justify-content: space-between;
+}
 .shipping-choice-group {
   margin-top: 16px;
 }
@@ -1667,6 +1693,16 @@
 }
 .dark-mode .shipping-details-list span {
   color: #aab6c9;
+}
+.dark-mode .shipping-review-intro,
+.dark-mode .shipping-review-summary > div {
+  color: #aab6c9;
+}
+.dark-mode .shipping-review-summary > div {
+  border-color: #2d3950;
+}
+.dark-mode .shipping-review-summary strong {
+  color: #edf3fb;
 }
 .dark-mode .shipping-choice-group > span {
   color: #aab6c9;
@@ -2529,7 +2565,7 @@ body {
 }
 .barcode-scanner-backdrop {
   position: fixed;
-  z-index: 12;
+  z-index: 32;
   inset: 0;
   display: grid;
   place-items: center;
@@ -3071,7 +3107,7 @@ td strong {
   display: grid;
   place-items: center;
   padding: 20px;
-  z-index: 2;
+  z-index: 30;
 }
 .modal {
   background: white;
@@ -3230,6 +3266,13 @@ td strong {
     width: auto;
     font-size: 18px;
   }
+  .mobile-bottom-nav .icon svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+  }
   .mobile-bottom-nav button.active {
     background: #202a40;
     color: #fff;
@@ -3250,6 +3293,10 @@ td strong {
     color: #25334c;
     box-shadow: 0 6px 18px #0710254d;
     cursor: pointer;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
   }
   .mobile-scan-button svg {
     width: 23px;
@@ -3562,6 +3609,17 @@ td strong {
     display: block;
     color: #738096;
     font: 10px "DM Mono";
+  }
+  .mobile-ticket-active .terminal-command,
+  .mobile-ticket-active .lookup-shortcut,
+  .mobile-ticket-active .lookup-index,
+  .mobile-ticket-active .receipt-key-hint,
+  .mobile-ticket-active .receipt-delivery-options kbd,
+  .mobile-ticket-active .add-on-choice kbd,
+  .mobile-ticket-active .coverage-modal > p:not(.coverage-pending),
+  .mobile-ticket-active .coverage-pending,
+  .mobile-ticket-active .coverage-modal kbd {
+    display: none;
   }
   .ticket-entry .dynamic-line > input {
     grid-column: auto;

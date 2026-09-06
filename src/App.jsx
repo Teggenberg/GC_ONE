@@ -47,6 +47,18 @@ const salesAssociates = [
 ];
 
 function Icon({ name }) {
+  if (name === "home")
+    return (
+      <span className="icon" aria-hidden="true">
+        <HomeIcon />
+      </span>
+    );
+  if (name === "cart")
+    return (
+      <span className="icon" aria-hidden="true">
+        <ShoppingCartIcon />
+      </span>
+    );
   const icons = {
     dashboard: "▦",
     database: "▤",
@@ -60,11 +72,20 @@ function Icon({ name }) {
     close: "×",
     trash: "⌫",
     edit: "✎",
+    payment: "$",
   };
   return (
     <span className="icon" aria-hidden="true">
       {icons[name]}
     </span>
+  );
+}
+
+function HomeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m3 10 9-7 9 7v10H4V10M9 20v-6h6v6" />
+    </svg>
   );
 }
 
@@ -147,8 +168,8 @@ export default function App() {
   const [mobileTicketActive, setMobileTicketActive] = useState(false);
   const [mobileTicketSection, setMobileTicketSection] = useState("cart");
   const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
-  const mobileScanHoldTimer = useRef(null);
-  const mobileScanButtonHeld = useRef(false);
+  const mobileScanTapTimer = useRef(null);
+  const mobileScanLastTapAt = useRef(0);
   const [ticketQuery, setTicketQuery] = useState("");
   const [pendingCommand, setPendingCommand] = useState("");
   const [appearance, setAppearance] = useState(() => {
@@ -684,10 +705,10 @@ export default function App() {
       <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
         {(mobileTicketActive
           ? [
-              ["home", "Home", "dashboard"],
-              ["cart", "Cart", "sale"],
+              ["home", "Home", "home"],
+              ["cart", "Cart", "cart"],
               ["customer", "Customer", "customers"],
-              ["payment", "Payment", "reports"],
+              ["payment", "Payment", "payment"],
             ]
           : [
               ["Dashboard", "Dashboard", "dashboard"],
@@ -739,28 +760,30 @@ export default function App() {
         <button
           className="mobile-scan-button"
           type="button"
-          onPointerDown={() => {
-            mobileScanButtonHeld.current = false;
-            mobileScanHoldTimer.current = window.setTimeout(() => {
-              mobileScanButtonHeld.current = true;
+          onPointerUp={(event) => {
+            event.preventDefault();
+            const now = Date.now();
+            if (now - mobileScanLastTapAt.current < 300) {
+              window.clearTimeout(mobileScanTapTimer.current);
+              mobileScanLastTapAt.current = 0;
               window.dispatchEvent(new CustomEvent("mobile-product-lookup"));
-            }, 550);
-          }}
-          onPointerUp={() => window.clearTimeout(mobileScanHoldTimer.current)}
-          onPointerCancel={() => window.clearTimeout(mobileScanHoldTimer.current)}
-          onContextMenu={(event) => event.preventDefault()}
-          onClick={() => {
-            if (mobileScanButtonHeld.current) {
-              mobileScanButtonHeld.current = false;
               return;
             }
-            setBarcodeScannerOpen(true);
+            mobileScanLastTapAt.current = now;
+            mobileScanTapTimer.current = window.setTimeout(() => {
+              mobileScanLastTapAt.current = 0;
+              setBarcodeScannerOpen(true);
+            }, 300);
           }}
-          aria-label="Tap to scan a product barcode. Press and hold to search inventory."
-          title="Tap to scan · Press and hold to search"
+          onContextMenu={(event) => event.preventDefault()}
+          onClick={(event) => {
+            if (event.detail === 0) setBarcodeScannerOpen(true);
+          }}
+          aria-label="Tap to scan a product barcode. Double tap to search inventory."
+          title="Tap to scan · Double tap to search"
         >
           <BarcodeIcon />
-          <span>Hold to search</span>
+          <span>Double tap to search</span>
         </button>
       )}
       {barcodeScannerOpen && (
@@ -1113,6 +1136,7 @@ function TicketEntry({
   const [receiptDeliveryOpen, setReceiptDeliveryOpen] = useState(false);
   const [receiptDeliveryChoice, setReceiptDeliveryChoice] = useState("");
   const [shippingDetailsOpen, setShippingDetailsOpen] = useState(false);
+  const [shippingReviewOpen, setShippingReviewOpen] = useState(false);
   const [shippingDeliveryOption, setShippingDeliveryOption] = useState("Ship to Store");
   const [shippingServiceLevel, setShippingServiceLevel] = useState("Ground - Free");
   const [associateLookupOpen, setAssociateLookupOpen] = useState(false);
@@ -1534,6 +1558,33 @@ function TicketEntry({
   const taxRate = 0.0725;
   const salesTax = values.taxable === "Yes" ? saleTotal * taxRate : 0;
   const grandTotal = saleTotal + salesTax + shippingCharge;
+  const requestReceiptDelivery = () => {
+    if (remoteFulfillmentLines.length) {
+      setShippingReviewOpen(true);
+      return;
+    }
+    setReceiptDeliveryOpen(true);
+  };
+  const acceptShippingReview = () => {
+    setShippingReviewOpen(false);
+    setReceiptDeliveryOpen(true);
+  };
+  useEffect(() => {
+    if (!shippingReviewOpen) return;
+    const confirmShippingReview = (event) => {
+      if (
+        event.key !== "Enter" ||
+        !window.matchMedia("(min-width: 651px)").matches
+      )
+        return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      acceptShippingReview();
+    };
+    window.addEventListener("keydown", confirmShippingReview, true);
+    return () =>
+      window.removeEventListener("keydown", confirmShippingReview, true);
+  }, [shippingReviewOpen]);
   const paymentTypes = [
     "C -Card",
     "01 - Cash",
@@ -1779,6 +1830,10 @@ function TicketEntry({
               className="customer-search-button"
               type="button"
               onClick={() => setCustomerSearch(true)}
+              onPointerUp={(event) => {
+                event.preventDefault();
+                setCustomerSearch(true);
+              }}
             >
               <Icon name="search" /> Search customer
             </button>
@@ -1787,6 +1842,10 @@ function TicketEntry({
                 className="customer-search-button"
                 type="button"
                 onClick={() => setShippingDetailsOpen(true)}
+                onPointerUp={(event) => {
+                  event.preventDefault();
+                  setShippingDetailsOpen(true);
+                }}
               >
                 Shipping Details
               </button>
@@ -1990,13 +2049,13 @@ function TicketEntry({
             className="complete-ticket-button"
             type="button"
             disabled={!paymentComplete}
-            onClick={() => setReceiptDeliveryOpen(true)}
+            onClick={requestReceiptDelivery}
             onKeyDown={(event) => {
               if (event.key !== "Enter") return;
               event.preventDefault();
               event.stopPropagation();
               event.nativeEvent.stopImmediatePropagation();
-              setReceiptDeliveryOpen(true);
+              requestReceiptDelivery();
             }}
           >
             Complete Ticket
@@ -2198,6 +2257,56 @@ function TicketEntry({
               onClick={() => setShippingDetailsOpen(false)}
             >
               Close
+            </button>
+          </div>
+        </Modal>
+      )}
+      {shippingReviewOpen && (
+        <Modal
+          title="Confirm shipping details"
+          onClose={() => setShippingReviewOpen(false)}
+        >
+          <p className="shipping-review-intro">
+            Review the fulfillment details before completing this ticket.
+          </p>
+          <div className="shipping-details-list">
+            {remoteFulfillmentLines.map((line, index) => (
+              <div key={`${line.itemNumber}-${index}`}>
+                <strong>{line.product.name}</strong>
+                <span>{line.fulfillment}</span>
+              </div>
+            ))}
+          </div>
+          <div className="shipping-review-summary">
+            <div>
+              <span>Delivery</span>
+              <strong>{shippingDeliveryOption}</strong>
+            </div>
+            <div>
+              <span>Service</span>
+              <strong>{shippingServiceLevel}</strong>
+            </div>
+            <div>
+              <span>Shipping</span>
+              <strong>{money.format(shippingCharge)}</strong>
+            </div>
+          </div>
+          <div className="form-actions shipping-review-actions">
+            <button
+              type="button"
+              onClick={() => {
+                setShippingReviewOpen(false);
+                setShippingDetailsOpen(true);
+              }}
+            >
+              Edit details
+            </button>
+            <button
+              className="primary"
+              type="button"
+              onClick={acceptShippingReview}
+            >
+              Accept &amp; continue
             </button>
           </div>
         </Modal>
@@ -3060,6 +3169,14 @@ function useLookupShortcut(matches, onSelect, enabled = true) {
 
 function InventoryLookup({ products, onSelect, onClose }) {
   const [query, setQuery] = useState("");
+  const searchInputRef = useRef(null);
+  useEffect(() => {
+    const focusInput = window.setTimeout(
+      () => searchInputRef.current?.focus({ preventScroll: true }),
+      0,
+    );
+    return () => window.clearTimeout(focusInput);
+  }, []);
   const searchStarted = Boolean(query.trim());
   const matches = searchStarted
     ? products.filter(
@@ -3087,6 +3204,7 @@ function InventoryLookup({ products, onSelect, onClose }) {
         <div className="lookup-search">
           <Icon name="search" />
           <input
+            ref={searchInputRef}
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}

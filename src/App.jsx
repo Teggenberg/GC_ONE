@@ -2953,11 +2953,19 @@ function TicketLineItems({
                 : [...current, nextLine];
             });
             setAddOnLine(null);
-            if (actionLine !== null) focusLineField(actionLine, "quantity");
+            if (
+              actionLine !== null &&
+              !window.matchMedia("(max-width: 650px)").matches
+            )
+              focusLineField(actionLine, "quantity");
           }}
           onClose={() => {
             setAddOnLine(null);
-            if (actionLine !== null) focusLineField(actionLine, "quantity");
+            if (
+              actionLine !== null &&
+              !window.matchMedia("(max-width: 650px)").matches
+            )
+              focusLineField(actionLine, "quantity");
           }}
         />
       )}

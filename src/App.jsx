@@ -165,8 +165,10 @@ export default function App() {
   const [modal, setModal] = useState(null);
   const [notice, setNotice] = useState("");
   const [ticketScreen, setTicketScreen] = useState("menu");
+  const [ticketEntryKey, setTicketEntryKey] = useState(0);
   const [mobileTicketActive, setMobileTicketActive] = useState(false);
   const [mobileTicketSection, setMobileTicketSection] = useState("cart");
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const [barcodeScannerOpen, setBarcodeScannerOpen] = useState(false);
   const mobileScanTapTimer = useRef(null);
   const mobileScanLastTapAt = useRef(0);
@@ -409,7 +411,7 @@ export default function App() {
   const palette = palettes[appearance.palette];
   return (
     <div
-      className={`app-shell ${appearance.dark ? "dark-mode" : ""} ${appearance.text === "terminal" ? "terminal-text" : ""} ${appearance.dark && appearance.text === "terminal" && appearance.palette === "matrix" ? "matrix-terminal" : ""} ${mobileTicketActive ? `mobile-ticket-active mobile-ticket-${mobileTicketSection}` : ""}`}
+      className={`app-shell ${appearance.dark ? "dark-mode" : ""} ${appearance.text === "terminal" ? "terminal-text" : ""} ${appearance.dark && appearance.text === "terminal" && appearance.palette === "matrix" ? "matrix-terminal" : ""} ${!mobileTicketActive ? "mobile-standard-view" : ""} ${mobileTicketActive ? `mobile-ticket-active mobile-ticket-${mobileTicketSection}` : ""}`}
       style={{ "--accent": palette.accent, "--ink": palette.ink }}
     >
       <aside className="sidebar">
@@ -463,6 +465,27 @@ export default function App() {
         </div>
       </aside>
       <main>
+        {!mobileTicketActive && (
+          <div className="mobile-global-header">
+            <button
+              className="mobile-global-logo-button"
+              type="button"
+              onPointerUp={(event) => {
+                event.preventDefault();
+                setMobileSettingsOpen(true);
+              }}
+              onClick={(event) => {
+                if (event.detail === 0) setMobileSettingsOpen(true);
+              }}
+              aria-label="Open settings"
+            >
+              <img src="/guitar-center-logo.jpg" alt="Guitar Center" />
+            </button>
+            <span className="avatar top" aria-label="Tim Eggenberger">
+              TE
+            </span>
+          </div>
+        )}
         <header>
           <div>
             <p className="eyebrow">
@@ -474,9 +497,6 @@ export default function App() {
           </div>
           <div className="header-actions">
             <button className="help">?</button>
-            <button className="bell">
-              ♧<i></i>
-            </button>
             <button className="avatar top">TE</button>
           </div>
         </header>
@@ -486,8 +506,10 @@ export default function App() {
         {view === "Sales Ticket Processing" && ticketScreen === "entry" && (
           <CustomerContext.Provider value={customers}>
             <TicketEntry
+              key={ticketEntryKey}
               products={products}
               customers={customers}
+              mobileTicketSection={mobileTicketSection}
               onExit={() => {
                 setView("Dashboard");
                 setTicketScreen("menu");
@@ -495,7 +517,12 @@ export default function App() {
               }}
               onComplete={(delivery) => {
                 toast(`Sales ticket completed — receipt: ${delivery}.`);
-                setTicketScreen("menu");
+                setTicketEntryKey((current) => current + 1);
+                setTicketScreen(
+                  window.matchMedia("(max-width: 650px)").matches
+                    ? "entry"
+                    : "menu",
+                );
                 setMobileTicketActive(false);
               }}
               onMobileSaleStart={() => {
@@ -883,6 +910,14 @@ export default function App() {
           </form>
         </Modal>
       )}
+      {mobileSettingsOpen && (
+        <Modal title="Settings" onClose={() => setMobileSettingsOpen(false)}>
+          <AppearanceSettings
+            appearance={appearance}
+            setAppearance={setAppearance}
+          />
+        </Modal>
+      )}
       {notice && <div className="toast">✓ {notice}</div>}
       {pendingCommand && (
         <div className="terminal-command" role="status">
@@ -1072,6 +1107,7 @@ function ProductProfileFields({ description, product }) {
 function TicketEntry({
   products,
   customers,
+  mobileTicketSection,
   onExit,
   onComplete,
   onMobileSaleStart,
@@ -1130,6 +1166,7 @@ function TicketEntry({
   });
   const [activeIndex, setActiveIndex] = useState(0);
   const [mobileSaleStarted, setMobileSaleStarted] = useState(false);
+  const [mobileCustomerMode, setMobileCustomerMode] = useState("actions");
   const [fieldJump, setFieldJump] = useState(null);
   const [topCommand, setTopCommand] = useState("");
   const [exitPrompt, setExitPrompt] = useState(false);
@@ -1150,6 +1187,9 @@ function TicketEntry({
   ]);
   const [payments, setPayments] = useState([{ type: "", amount: "" }]);
   const [paymentCodeEntry, setPaymentCodeEntry] = useState(null);
+  const [mobilePaymentSelectorOpen, setMobilePaymentSelectorOpen] =
+    useState(false);
+  const [mobilePaymentTarget, setMobilePaymentTarget] = useState(0);
   const [inventorySearch, setInventorySearch] = useState(false);
   const [customerSearch, setCustomerSearch] = useState(false);
   const [lookupTarget, setLookupTarget] = useState("item");
@@ -1282,6 +1322,38 @@ function TicketEntry({
       window.removeEventListener("customer-selected", selectCustomer);
   }, []);
   const active = fieldOrder[activeIndex];
+  const mobileCustomerActionsOnly =
+    !values.customerId && mobileCustomerMode !== "create";
+  const startCustomerCreate = () => {
+    setValues((current) => ({
+      ...current,
+      customerId: "",
+      customerName: "",
+      email: "",
+      address: "",
+      zip: "",
+      city: "",
+      state: "",
+      phone: "",
+      resale: "",
+    }));
+    setMobileCustomerMode("create");
+  };
+  const removeCustomerFromTicket = () => {
+    setValues((current) => ({
+      ...current,
+      customerId: "",
+      customerName: "",
+      email: "",
+      address: "",
+      zip: "",
+      city: "",
+      state: "",
+      phone: "",
+      resale: "",
+    }));
+    setMobileCustomerMode("actions");
+  };
   const moveTo = (index) => {
     const next = Math.max(0, Math.min(fieldOrder.length - 1, index));
     setActiveIndex(next);
@@ -1687,6 +1759,21 @@ function TicketEntry({
       return next;
     });
   };
+  const openMobilePaymentSelector = () => {
+    const nextPaymentIndex = payments.findIndex(
+      (payment) => !payment.type && !payment.isChangeDue,
+    );
+    setMobilePaymentTarget(
+      nextPaymentIndex >= 0 ? nextPaymentIndex : payments.length,
+    );
+    setMobilePaymentSelectorOpen(true);
+  };
+  const selectMobilePaymentType = (type) => {
+    updatePayment(mobilePaymentTarget, "type", type);
+    setPaymentCodeEntry(null);
+    setActiveIndex(0);
+    setMobilePaymentSelectorOpen(false);
+  };
   const paymentTypeFromCode = (code) => {
     const normalizedCode = code.toUpperCase();
     return (
@@ -1773,7 +1860,15 @@ function TicketEntry({
               <b>{ticketItemCount}</b> {ticketItemCount === 1 ? "item" : "items"}
             </span>
             <span>
-              Subtotal <b>{money.format(saleTotal)}</b>
+              {mobileTicketSection === "payment" ? (
+                <>
+                  Customer <b>{values.customerName || "No customer"}</b>
+                </>
+              ) : (
+                <>
+                  Subtotal <b>{money.format(saleTotal)}</b>
+                </>
+              )}
             </span>
           </div>
         </div>
@@ -1802,7 +1897,46 @@ function TicketEntry({
         />
       </div>
       <div className="ticket-lower">
-        <section className="customer-panel panel" data-mobile-ticket-section="customer">
+        <section
+          className={`customer-panel panel ${mobileCustomerActionsOnly ? "mobile-customer-unassigned" : ""}`}
+          data-mobile-ticket-section="customer"
+        >
+          <div className="mobile-customer-start">
+            <button
+              className="mobile-customer-action"
+              type="button"
+              onClick={(event) => {
+                if (event.detail === 0) setCustomerSearch(true);
+              }}
+              onPointerUp={(event) => {
+                event.preventDefault();
+                scheduleMobileModal(() => setCustomerSearch(true));
+              }}
+            >
+              <Icon name="search" />
+              <span>
+                <strong>Search customer</strong>
+                <small>Find an existing profile</small>
+              </span>
+            </button>
+            <button
+              className="mobile-customer-action"
+              type="button"
+              onClick={(event) => {
+                if (event.detail === 0) startCustomerCreate();
+              }}
+              onPointerUp={(event) => {
+                event.preventDefault();
+                startCustomerCreate();
+              }}
+            >
+              <Icon name="plus" />
+              <span>
+                <strong>Create customer</strong>
+                <small>Start a new profile</small>
+              </span>
+            </button>
+          </div>
           <div className="panel-title">
             <div>
               <p className="eyebrow">CUSTOMER INFORMATION</p>
@@ -1826,13 +1960,39 @@ function TicketEntry({
               </button>
             )}
           </div>
+          {values.customerId && (
+            <>
+              <button
+                className="mobile-remove-customer"
+                type="button"
+                onClick={(event) => {
+                  if (event.detail === 0) removeCustomerFromTicket();
+                }}
+                onPointerUp={(event) => {
+                  event.preventDefault();
+                  removeCustomerFromTicket();
+                }}
+                aria-label="Remove customer from ticket"
+              >
+                <Icon name="close" />
+              </button>
+              <div className="mobile-customer-id">
+                <span>Customer number</span>
+                <strong>{values.customerId}</strong>
+              </div>
+            </>
+          )}
           <div className="customer-grid">
             {input("customerId")}
             {input("customerName")}
             {input("email", { type: "email" })}
             {input("address")} {input("zip")}
             {input("city")}
-            {input("state")}
+            {input("state", {
+              maxLength: 2,
+              placeholder: "TX",
+              autoCapitalize: "characters",
+            })}
             {input("phone", { type: "tel" })}
             {input("resale")}
           </div>
@@ -1907,6 +2067,22 @@ function TicketEntry({
         </div>
         <div className="payment-entry-layout">
           <div className="payment-fields">
+            {!paymentComplete && (
+              <div className="mobile-add-payment-action">
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    if (event.detail === 0) openMobilePaymentSelector();
+                  }}
+                  onPointerUp={(event) => {
+                    event.preventDefault();
+                    scheduleMobileModal(openMobilePaymentSelector);
+                  }}
+                >
+                  <Icon name="plus" /> Add payment
+                </button>
+              </div>
+            )}
             {payments.map((payment, index) => {
             const paymentFieldIndex = fieldOrder.findIndex(
               (field) => field[2] === "paymentType",
@@ -1916,10 +2092,18 @@ function TicketEntry({
             );
             const lineNumber = `24.${String(index + 1).padStart(2, "0")}`;
             return (
-              <div className="payment-line" key={payment.isChangeDue ? "change" : index}>
+              <div
+                className={`payment-line ${payment.type ? "" : "payment-line-pending"}`}
+                key={payment.isChangeDue ? "change" : index}
+              >
                 <b>{lineNumber}</b>
+                {payment.type && (
+                  <span className="mobile-payment-type-label">
+                    {payment.type}
+                  </span>
+                )}
                 <label
-                  className={`ticket-field payment-field ${activeIndex === paymentFieldIndex ? "focused" : ""}`}
+                  className={`ticket-field payment-field payment-type-field ${activeIndex === paymentFieldIndex ? "focused" : ""}`}
                 >
                   <span>Type</span>
                   <input
@@ -2013,7 +2197,7 @@ function TicketEntry({
                     )}
                 </label>
                 <label
-                  className={`ticket-field payment-field ${activeIndex === amountFieldIndex ? "focused" : ""}`}
+                  className={`ticket-field payment-field payment-amount-field ${activeIndex === amountFieldIndex ? "focused" : ""}`}
                 >
                   <span>Amount</span>
                   <input
@@ -2326,6 +2510,26 @@ function TicketEntry({
           </div>
         </Modal>
       )}
+      {mobilePaymentSelectorOpen && (
+        <Modal
+          title="Add payment"
+          onClose={() => setMobilePaymentSelectorOpen(false)}
+        >
+          <div className="mobile-payment-options">
+            {paymentTypes
+              .filter((type) => type !== "19 - Change Due")
+              .map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => selectMobilePaymentType(type)}
+                >
+                  {type}
+                </button>
+              ))}
+          </div>
+        </Modal>
+      )}
       {customerSearch && (
         <CustomerLookup
           customers={customers}
@@ -2406,6 +2610,12 @@ function TicketLineItems({
   const [addOnLine, setAddOnLine] = useState(null);
   const [imageProduct, setImageProduct] = useState(null);
   const [actionLine, setActionLine] = useState(null);
+  const [deliveryNotice, setDeliveryNotice] = useState("");
+  useEffect(() => {
+    if (!deliveryNotice) return;
+    const dismissNotice = window.setTimeout(() => setDeliveryNotice(""), 2400);
+    return () => window.clearTimeout(dismissNotice);
+  }, [deliveryNotice]);
   useEffect(() => {
     const addScannedProduct = (event) => {
       const barcode = String(event.detail ?? "").trim();
@@ -2746,14 +2956,20 @@ function TicketLineItems({
                 <span className="line-action-placeholder details-slot" />
               )}
               {line.product && (
-                <span
+                <button
                   className="financing-indicator"
+                  type="button"
+                  onClick={() => {
+                    if (!window.matchMedia("(max-width: 650px)").matches)
+                      focusLineField(index, "quantity");
+                  }}
                   title="Promotional financing available"
+                  aria-label={`Promotional financing: ${line.product.promotionalFinancingTerm ?? 6} months`}
                 >
                   <i aria-hidden="true">
                     <span>{line.product.promotionalFinancingTerm ?? 6} mo</span>
                   </i>
-                </span>
+                </button>
               )}
               {!line.product && (
                 <span className="line-action-placeholder financing-slot" />
@@ -2800,13 +3016,24 @@ function TicketLineItems({
                 <span className="line-action-placeholder add-on-slot" />
               )}
               {line.fulfillment && line.fulfillment !== "In-store" ? (
-                <span
+                <button
                   className="delivery-indicator"
+                  type="button"
+                  onClick={() => {
+                    setDeliveryNotice(line.fulfillment);
+                    if (!window.matchMedia("(max-width: 650px)").matches)
+                      focusLineField(index, "quantity");
+                  }}
                   title={`Delivery from ${line.fulfillment}`}
-                  aria-label={`Delivery from ${line.fulfillment}`}
+                  aria-label={`Show shipping origin: ${line.fulfillment}`}
                 >
                   <DeliveryTruckIcon />
-                </span>
+                  {deliveryNotice === line.fulfillment && (
+                    <span className="delivery-origin-notice" role="status">
+                      This item ships from {line.fulfillment}.
+                    </span>
+                  )}
+                </button>
               ) : (
                 <span className="line-action-placeholder delivery-slot" />
               )}
@@ -3538,7 +3765,7 @@ function MasterDatabaseMenu({ onSelect }) {
 }
 function InventoryManagementMenu({ onSelect }) {
   return (
-    <section className="ticket-menu">
+    <section className="ticket-menu inventory-management-menu">
       <p className="eyebrow">INVENTORY MANAGEMENT</p>
       <h2>Select an option</h2>
       <p className="ticket-intro">

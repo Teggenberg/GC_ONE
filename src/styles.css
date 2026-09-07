@@ -191,7 +191,10 @@
   position: relative;
   color: #405675;
   line-height: 1;
-  cursor: default;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
 }
 .financing-indicator i {
   display: block;
@@ -322,6 +325,11 @@
   margin-top: 8px;
 }
 .mobile-customer-actions {
+  display: none;
+}
+.mobile-customer-start,
+.mobile-customer-id,
+.mobile-remove-customer {
   display: none;
 }
 .mobile-empty-ticket-cart {
@@ -624,12 +632,16 @@
 }
 .delivery-indicator {
   display: inline-grid;
+  position: relative;
   width: 28px;
   height: 28px;
   place-items: center;
   border: 1px solid #9aa8ba;
   border-radius: 4px;
+  padding: 0;
+  background: transparent;
   color: #405675;
+  cursor: pointer;
 }
 .delivery-indicator svg {
   width: 20px;
@@ -647,6 +659,23 @@
 .matrix-terminal .delivery-indicator {
   border-color: #21773b;
   color: #6dff8a;
+}
+.delivery-origin-notice {
+  position: absolute;
+  z-index: 40;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 32px));
+  translate: -50% 0;
+  border-radius: 6px;
+  background: #172743;
+  color: #fff;
+  padding: 11px 14px;
+  box-shadow: 0 8px 24px #0003;
+  font-size: 12px;
+  text-align: left;
+  white-space: normal;
 }
 .line-action-placeholder {
   display: block;
@@ -1576,6 +1605,25 @@
   display: grid;
   gap: 10px;
 }
+.mobile-add-payment-action,
+.mobile-payment-type-label {
+  display: none;
+}
+.mobile-payment-options {
+  display: grid;
+  gap: 9px;
+}
+.mobile-payment-options button {
+  width: 100%;
+  border: 1px solid #dbe1e9;
+  border-radius: 7px;
+  background: #fff;
+  color: #25334c;
+  padding: 13px;
+  text-align: left;
+  font: 600 13px "DM Sans";
+  cursor: pointer;
+}
 .payment-entry-layout {
   display: grid;
   grid-template-columns: 50% minmax(220px, 1fr);
@@ -1654,6 +1702,11 @@
   border-color: #3a4860;
   background: #141d2e;
   color: #718096;
+}
+.dark-mode .mobile-payment-options button {
+  border-color: #3a4860;
+  background: #141d2e;
+  color: #edf3fb;
 }
 .dark-mode .financing-details-summary > div {
   border-color: #2d3950;
@@ -2682,14 +2735,8 @@ h1 {
   width: 23px;
   height: 23px;
 }
-.bell i {
-  position: absolute;
-  width: 5px;
-  height: 5px;
-  background: #f17368;
-  border-radius: 50%;
-  top: 1px;
-  right: 0;
+.mobile-global-header {
+  display: none;
 }
 .register {
   display: grid;
@@ -3230,11 +3277,60 @@ td strong {
   textarea {
     font-size: 16px !important;
   }
+  .inventory-management-menu .ticket-hint,
+  .inventory-management-menu .ticket-options kbd {
+    display: none;
+  }
+  .mobile-ticket-active .delivery-origin-notice {
+    right: 0;
+    left: auto;
+    max-width: calc(100vw - 48px);
+    translate: 0;
+  }
   .sidebar {
     display: none;
   }
   main {
     padding: 20px 16px calc(82px + env(safe-area-inset-bottom));
+  }
+  .mobile-standard-view main {
+    padding-top: calc(69px + env(safe-area-inset-top));
+  }
+  .mobile-standard-view main > header {
+    display: none;
+  }
+  .mobile-standard-view .mobile-global-header {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: calc(57px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 16px 0;
+    border-bottom: 1px solid #dbe1e9;
+    background: #fff;
+    box-shadow: 0 3px 10px #14213b0d;
+  }
+  .mobile-global-logo-button {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .mobile-global-logo-button img {
+    width: 108px;
+    height: 35px;
+    object-fit: contain;
+    border-radius: 3px;
+  }
+  .mobile-global-header .avatar {
+    flex: 0 0 auto;
   }
   .mobile-bottom-nav {
     position: fixed;
@@ -3399,6 +3495,127 @@ td strong {
     overflow-y: auto;
     border-radius: 0;
   }
+  .mobile-ticket-customer .customer-panel.mobile-customer-unassigned .panel-title,
+  .mobile-ticket-customer .customer-panel.mobile-customer-unassigned .customer-grid,
+  .mobile-ticket-customer .customer-panel.mobile-customer-unassigned .mobile-customer-actions {
+    display: none;
+  }
+  .mobile-ticket-customer .customer-panel.mobile-customer-unassigned .mobile-customer-start {
+    display: grid;
+    min-height: 100%;
+    align-content: center;
+    gap: 12px;
+  }
+  .mobile-customer-action {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+    border: 1px solid #dbe1e9;
+    border-radius: 10px;
+    background: #fff;
+    color: #25334c;
+    padding: 17px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .mobile-customer-action .icon {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--accent) 24%, #fff);
+    font-size: 22px;
+  }
+  .mobile-customer-action strong,
+  .mobile-customer-action small {
+    display: block;
+  }
+  .mobile-customer-action strong {
+    font-size: 15px;
+  }
+  .mobile-customer-action small {
+    margin-top: 3px;
+    color: #738096;
+    font-size: 11px;
+  }
+  .mobile-ticket-customer .mobile-customer-id {
+    display: block;
+    margin: 2px 0 14px;
+  }
+  .mobile-ticket-customer .mobile-remove-customer {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    display: grid;
+    width: 28px;
+    height: 28px;
+    place-items: center;
+    border: 1px solid #dbe1e9;
+    border-radius: 6px;
+    background: #fff;
+    color: #728096;
+    cursor: pointer;
+  }
+  .mobile-remove-customer .icon {
+    font-size: 18px;
+  }
+  .mobile-customer-id span,
+  .mobile-customer-id strong {
+    display: block;
+  }
+  .mobile-customer-id span {
+    color: #738096;
+    font: 9px "DM Mono";
+  }
+  .mobile-customer-id strong {
+    margin-top: 3px;
+    color: #25334c;
+    font: 600 13px "DM Mono";
+  }
+  .mobile-ticket-customer .customer-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field {
+    grid-column: 1 / -1;
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field:first-child {
+    display: none;
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(5),
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(8) {
+    grid-column: span 3;
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(6) {
+    grid-column: span 4;
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(7) {
+    grid-column: span 2;
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(7) input {
+    text-transform: uppercase;
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(2) {
+    order: 1;
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(3) {
+    order: 2;
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(4) {
+    order: 3;
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(6),
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(7) {
+    order: 4;
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(5),
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(8) {
+    order: 5;
+  }
+  .mobile-ticket-customer .customer-grid .ticket-field:nth-child(9) {
+    order: 6;
+  }
   .mobile-ticket-customer .customer-panel .panel-title .customer-search-button {
     display: none;
   }
@@ -3438,9 +3655,38 @@ td strong {
     grid-template-columns: 1fr;
     gap: 14px;
   }
+  .mobile-ticket-payment .mobile-add-payment-action {
+    display: block;
+    order: 2;
+  }
+  .mobile-ticket-payment .mobile-add-payment-action button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    width: 100%;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--accent) 18%, #fff);
+    color: #25334c;
+    padding: 12px;
+    font: 600 13px "DM Sans";
+    cursor: pointer;
+  }
   .mobile-ticket-payment .payment-line {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+  }
+  .mobile-ticket-payment .payment-line-pending,
+  .mobile-ticket-payment .payment-type-field {
+    display: none;
+  }
+  .mobile-ticket-payment .mobile-payment-type-label {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    color: #526b88;
+    font: 600 12px "DM Sans";
   }
   .mobile-ticket-payment .payment-line > b {
     display: none;
@@ -3514,6 +3760,13 @@ td strong {
   .mobile-basket-summary b {
     color: #25334c;
     font-weight: 700;
+  }
+  .mobile-basket-summary span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .ticket-entry .ticket-bar,
   .ticket-entry .ticket-focus-readout,
@@ -3669,6 +3922,27 @@ td strong {
     border-color: #2d3950;
     background: #192235;
   }
+  .dark-mode .mobile-global-header {
+    border-color: #2d3950;
+    background: #192235;
+  }
+  .dark-mode .mobile-customer-action {
+    border-color: #2d3950;
+    background: #192235;
+    color: #edf3fb;
+  }
+  .dark-mode .mobile-customer-action small,
+  .dark-mode .mobile-customer-id span {
+    color: #aab6c9;
+  }
+  .dark-mode .mobile-customer-id strong {
+    color: #edf3fb;
+  }
+  .dark-mode .mobile-remove-customer {
+    border-color: #3a4860;
+    background: #141d2e;
+    color: #c7d5e8;
+  }
   .dark-mode .mobile-associate-header span {
     color: #aab6c9;
   }
@@ -3682,6 +3956,10 @@ td strong {
   .dark-mode .mobile-basket-summary {
     border-color: #2d3950;
     color: #aab6c9;
+  }
+  .dark-mode .mobile-ticket-payment .mobile-add-payment-action button {
+    background: color-mix(in srgb, var(--accent) 18%, #141d2e);
+    color: #edf3fb;
   }
   .dark-mode .mobile-basket-summary b {
     color: #edf3fb;
@@ -3697,7 +3975,32 @@ td strong {
     background: #041108;
     color: #6dff8a;
   }
+  .matrix-terminal .mobile-customer-action {
+    border-color: #21773b;
+    background: #041108;
+    color: #6dff8a;
+  }
+  .matrix-terminal .mobile-customer-action small,
+  .matrix-terminal .mobile-customer-id span,
+  .matrix-terminal .mobile-customer-id strong {
+    color: #6dff8a;
+  }
+  .matrix-terminal .mobile-remove-customer {
+    border-color: #21773b;
+    background: #041108;
+    color: #6dff8a;
+  }
+  .matrix-terminal .mobile-ticket-payment .mobile-add-payment-action button,
+  .matrix-terminal .mobile-payment-options button {
+    border-color: #21773b;
+    background: #041108;
+    color: #6dff8a;
+  }
   .matrix-terminal .mobile-associate-header {
+    border-color: #21773b;
+    background: #041108;
+  }
+  .matrix-terminal .mobile-global-header {
     border-color: #21773b;
     background: #041108;
   }

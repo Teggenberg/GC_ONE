@@ -122,7 +122,11 @@ function TrashCanIcon() {
 }
 
 export default function App() {
-  const [view, setView] = useState("Sales Ticket Processing");
+  const [view, setView] = useState(() =>
+    window.matchMedia("(max-width: 650px)").matches
+      ? "Dashboard"
+      : "Sales Ticket Processing",
+  );
   const [products, setProducts] = useState(() => {
     try {
       const saved =
